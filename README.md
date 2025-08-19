@@ -1,4 +1,4 @@
-## Project Assignment: Distributed Agar.io Implementation
+# Raga.io
 
 ## Game Overview
 Agar.io is a popular multiplayer online game where players control a circular cell in a 2D environment (see [Wikipedia](https://en.wikipedia.org/wiki/Agar.io)).

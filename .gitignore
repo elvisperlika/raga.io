@@ -11,6 +11,7 @@
 .bloop/
 bloop.settings.json
 *.json
+.bsp/
 
 # VS Code
 .vscode/

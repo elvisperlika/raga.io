@@ -35,14 +35,13 @@ class View extends MainFrame:
     button
 
   def makeTextField(placeholder: String): TextField =
-    new TextField {
+    new TextField:
       columns = 10
       maximumSize = new Dimension(150, 20)
       text = placeholder
       horizontalAlignment = scala.swing.Alignment.Center
-    }
 
-  val panel = new BoxPanel(Orientation.Vertical) {
+  val panel = new BoxPanel(Orientation.Vertical):
     val bigVSpaceSize = 50
     val smallVSpaceSize = 10
 
@@ -70,9 +69,7 @@ class View extends MainFrame:
     border = Swing.EmptyBorder(30, 30, 30, 30)
     // Center alignment for all components
     contents.foreach(_.xLayoutAlignment = 0.5)
-  }
   panel.background = new java.awt.Color(0, 255, 255, 100)
 
-  contents = new BorderPanel {
+  contents = new BorderPanel:
     layout(panel) = Center
-  }

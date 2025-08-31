@@ -99,7 +99,7 @@ object Main:
     val dynamicConfigString =
       s"""
         akka.remote.artery.canonical.hostname = "$host"
-        akka.remote.artery.canonical.port = "$port"
+        akka.remote.artery.canonical.port = "$port" 
         akka.cluster.roles = ["$role"]
       """
 

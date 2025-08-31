@@ -1,0 +1,35 @@
+services:
+  main:
+    build: .
+    container_name: main-server
+    command: "main 19000 main"
+    ports:
+      - "19000:19000"
+    networks:
+      - game-net
+      
+  child1:
+    build: .
+    container_name: child1-server
+    command: "child1 19001 child"
+    ports:
+      - "19001:19001"
+    networks:
+      - game-net
+    depends_on:
+      - main
+      
+  child2:
+    build: .
+    container_name: child2-server
+    command: "child2 19002 child"
+    ports:
+      - "19002:19002"
+    networks:
+      - game-net
+    depends_on:
+      - main
+
+networks:
+  game-net:
+    driver: bridge

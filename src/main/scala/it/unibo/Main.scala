@@ -16,21 +16,22 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.receptionist.Receptionist
 import it.unibo.agar.servers.mother.MotherServer
 import it.unibo.agar.servers.child.ChildServer
-object RootBehavior:
+import it.unibo.agar.servers.mother.MotherServer.MotherEvent
+import it.unibo.agar.servers.child.ChildServer.ChildEvent
+import it.unibo.agar.client.controller.ClientActor.ClientEvent
+import scala.annotation.meta.companionClass
+import it.unibo.agar.client.controller.ClientActor
+import it.unibo.agar.client.view.View
 
-  def apply(role: String): Behavior[Nothing] =
-    Behaviors.setup: ctx =>
-      role match
-        case "main" =>
-          ctx.spawn(MotherServer(), "MainServer")
-          Behaviors.same
-        case "child" =>
-          ctx.spawn(ChildServer(), "ChildServer")
-          Behaviors.same
+private enum Role(val value: String):
 
-private case class Node(hostname: String, port: Int, role: String)
+  case Client extends Role("client")
+  case Mother extends Role("mother")
+  case Child extends Role("child")
 
 object Main:
+
+  val ACTOR_SYSTEM_NAME = "GameCluster"
 
   def main(args: Array[String]): Unit =
     if args.length == 3 then
@@ -52,4 +53,11 @@ object Main:
     val config = ConfigFactory
       .parseString(dynamicConfigString)
       .withFallback(ConfigFactory.load())
-    ActorSystem[Nothing](RootBehavior(role), "GameCluster", config)
+    import Role.*
+    role match
+      case Mother.value => ActorSystem[MotherEvent](MotherServer(), ACTOR_SYSTEM_NAME, config)
+      case Child.value => ActorSystem[ChildEvent](ChildServer(), ACTOR_SYSTEM_NAME, config)
+      case Client.value => ActorSystem[ClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
+      case _ =>
+        println("Role not available...")
+        sys.exit(1)

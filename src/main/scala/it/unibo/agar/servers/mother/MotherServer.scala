@@ -33,23 +33,24 @@ object MotherServer:
     Behaviors.setup: ctx =>
       println("😍 Main Server up")
       val cluster = Cluster(ctx.system)
+
       val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(MotherEvent.MyMemberEvent.apply)
       cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[ClusterEvent.MemberEvent])
 
       val listingAdapter = ctx.messageAdapter[Receptionist.Listing](MotherEvent.ChildrenUpdated.apply)
       ctx.system.receptionist ! Receptionist.Subscribe(ChildServer.ChildKey, listingAdapter)
 
+      import MotherEvent.*
       Behaviors.receiveMessage:
-        case MotherEvent.MyMemberEvent(event) =>
+        case MyMemberEvent(event) =>
           event match
             case MemberUp(member) if member.hasRole("child") =>
               println(s"😍 Main server sees child node ${member.address} is up. Trying to find the child server...")
-              // send to message to member
               Behaviors.same
             case _ =>
               Behaviors.same
 
-        case MotherEvent.ChildrenUpdated(ChildServer.ChildKey.Listing(children)) =>
+        case ChildrenUpdated(ChildServer.ChildKey.Listing(children)) =>
           children.foreach: child =>
             ctx.log.info(s"👉 Sending X to child $child")
             child ! ChildServer.ChildEvent.X

@@ -6,16 +6,38 @@ import java.util.TimerTask
 import scala.swing.*
 import scala.swing.Swing.onEDT
 import it.unibo.agar.client.view.View
+import akka.actor.typed.Behavior
+import it.unibo.agar.servers.child.ChildServer.ChildEvent
+import akka.actor.typed.scaladsl.Behaviors
+import scala.concurrent.duration.DurationInt
+import javax.swing.JFrame
+import javax.swing.JPanel
+import javax.swing.WindowConstants
+import java.awt.Graphics
+import java.awt.Color
+import it.unibo.agar.client.model.MockGameStateManager
+import it.unibo.agar.client.model.GameInitializer
+import it.unibo.agar.client.model.World
 
-object ClientApp extends SimpleSwingApplication:
+object ClientActor:
 
-  private val view = new View()
-  private val timer = new Timer()
-  private val task: TimerTask = new TimerTask:
-    override def run(): Unit =
-      onEDT(Window.getWindows.foreach(_.repaint()))
-      println("Run")
+  enum ClientEvent:
 
-  timer.scheduleAtFixedRate(task, 0, 30) // every 30ms
+    case Tick
 
-  override def top: Frame = view
+  def apply(): Behavior[ClientEvent] = Behaviors.setup: ctx =>
+    val view = new View()
+    view.visible = true
+
+    Behaviors.withTimers: timers =>
+      timers.startTimerAtFixedRate("tick", ClientEvent.Tick, 30.millis)
+      import ClientEvent.*
+      Behaviors.receiveMessage {
+        case Tick =>
+          ctx.log.info("🏀 Client do Tick")
+          onEDT(view.repaint())
+          Behaviors.same
+        case _ =>
+          Behaviors.same
+      }
+    Behaviors.same

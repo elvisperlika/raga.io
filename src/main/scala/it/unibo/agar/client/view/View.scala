@@ -1,9 +1,9 @@
-package it.unibo.agar.view
+package it.unibo.agar.client.view
 
 import scala.swing.MainFrame
 import java.awt.Dimension
-import it.unibo.agar.utils.Parameters.WIDTH
-import it.unibo.agar.utils.Parameters.HEIGHT
+import it.unibo.agar.client.utils.Parameters.WIDTH
+import it.unibo.agar.client.utils.Parameters.HEIGHT
 import javax.swing.border.Border
 
 class View extends MainFrame:

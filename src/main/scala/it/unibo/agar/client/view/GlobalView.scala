@@ -1,6 +1,6 @@
-package it.unibo.agar.view
+package it.unibo.agar.client.view
 
-import it.unibo.agar.model.MockGameStateManager
+import it.unibo.agar.client.model.MockGameStateManager
 
 import java.awt.Color
 import java.awt.Graphics2D

@@ -1,4 +1,4 @@
-package it.unibo.agar
+package it.unibo.agar.client
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior

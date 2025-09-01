@@ -1,22 +1,13 @@
-package it.unibo.agar.controller
-
-import it.unibo.agar.model.AIMovement
-import it.unibo.agar.model.GameInitializer
-import it.unibo.agar.model.MockGameStateManager
-import it.unibo.agar.model.World
-import it.unibo.agar.view.GlobalView
-import it.unibo.agar.view.LocalView
+package it.unibo.agar.client.controller
 
 import java.awt.Window
 import java.util.Timer
 import java.util.TimerTask
 import scala.swing.*
 import scala.swing.Swing.onEDT
-import it.unibo.agar.utils.Parameters.WIDTH
-import it.unibo.agar.utils.Parameters.HEIGHT
-import it.unibo.agar.view.View
+import it.unibo.agar.client.view.View
 
-object Main extends SimpleSwingApplication:
+object ClientApp extends SimpleSwingApplication:
 
   private val view = new View()
   private val timer = new Timer()

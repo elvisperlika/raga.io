@@ -1,4 +1,4 @@
-package it.unibo.agar.model
+package it.unibo.agar.client.model
 
 /** Object responsible for AI movement logic, separate from the game state management */
 object AIMovement:

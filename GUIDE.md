@@ -13,7 +13,7 @@ java -version
 
 To run the demo, open **5 separate terminals** and execute the following commands (one per terminal, in order):
 
-1. **Main server**
+1. **Main server** - the Main Server is mandatory to allow other seeds to join the cluster.
   ```bash
   java -jar agario*.jar 127.0.0.1 19000 main
   ```

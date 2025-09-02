@@ -57,7 +57,7 @@ class View extends MainFrame:
     val smallVSpaceSize = 10
 
     contents += Swing.VStrut(bigVSpaceSize)
-    contents += makeLabel("Enter your nickname (mandator).")
+    contents += makeLabel("Enter your nickname (mandatory).")
     contents += makeLabel("GREEN if available, RED otherwise):")
     contents += Swing.VStrut(smallVSpaceSize)
     contents += nicknameTextField
@@ -65,7 +65,7 @@ class View extends MainFrame:
     contents += joinRandomRoomButton
 
     contents += Swing.VStrut(bigVSpaceSize)
-    contents += makeLabel("Create a room and join its!")
+    contents += makeLabel("Create a room and join it!")
     contents += makeLabel("You'll see the room's code on the top-left corner.")
     contents += Swing.VStrut(smallVSpaceSize)
     contents += createAndJoinRoomButton

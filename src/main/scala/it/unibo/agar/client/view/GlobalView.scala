@@ -2,7 +2,6 @@ package it.unibo.agar.client.view
 
 import it.unibo.agar.client.model.MockGameStateManager
 
-import java.awt.Color
 import java.awt.Graphics2D
 import scala.swing.*
 

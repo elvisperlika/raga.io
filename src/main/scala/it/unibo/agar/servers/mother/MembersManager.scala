@@ -11,7 +11,7 @@ import akka.actor.typed.ActorRef
 object MembersManager:
 
   def apply(): Behavior[MemberEvent] = Behaviors.setup: ctx =>
-    ctx.log.info(s"🪀 Members Manger is Up")
+    ctx.log.info(s"🪀 Members Manager is Up")
     val cluster = Cluster(ctx.system)
     cluster.subscriptions ! Subscribe(ctx.self, classOf[MemberEvent])
 

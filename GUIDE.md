@@ -15,7 +15,7 @@ To run the demo, open **5 separate terminals** and execute the following command
 
 1. **Main server** - the Main Server is mandatory to allow other seeds to join the cluster.
   ```bash
-  java -jar agario*.jar 127.0.0.1 19000 main
+  java -jar agario*.jar 127.0.0.1 19000 mother
   ```
 
 2. **Child server Nr. 1**

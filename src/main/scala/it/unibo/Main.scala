@@ -1,27 +1,14 @@
 package it.unibo
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.Cluster
-import akka.cluster.typed.Subscribe
-import akka.cluster.ClusterEvent._
-import akka.actor.typed.Behavior
+import akka.cluster.ClusterEvent.*
 import com.typesafe.config.ConfigFactory
-
-import akka.actor.typed.ActorRef
-import akka.cluster.Member
-import scala.concurrent.duration.DurationInt
-import akka.cluster.ClusterEvent
-import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.receptionist.Receptionist
-import it.unibo.agar.servers.mother.MotherServer
-import it.unibo.agar.servers.child.ChildServer
-import it.unibo.agar.servers.mother.MotherServer.MotherEvent
-import it.unibo.agar.servers.child.ChildServer.ChildEvent
-import it.unibo.agar.client.controller.ClientActor.ClientEvent
-import scala.annotation.meta.companionClass
 import it.unibo.agar.client.controller.ClientActor
-import it.unibo.agar.client.view.View
+import it.unibo.agar.client.controller.ClientActor.ClientEvent
+import it.unibo.agar.servers.child.ChildServer
+import it.unibo.agar.servers.child.ChildServer.ChildEvent
+import it.unibo.agar.servers.mother.MotherServer
+import it.unibo.agar.servers.mother.MotherServer.MotherEvent
 
 private enum Role(val value: String):
 
@@ -40,7 +27,7 @@ object Main:
       val role = args(2)
       startup(hostname, port, role)
     else
-      println("Usage: run <host> <port> <role> [seed-nodes...]")
+      println("Usage: run <host> <port> <role>")
       sys.exit(1)
 
   private def startup(hostname: String, port: String, role: String): Unit =
@@ -59,5 +46,5 @@ object Main:
       case Child.value => ActorSystem[ChildEvent](ChildServer(), ACTOR_SYSTEM_NAME, config)
       case Client.value => ActorSystem[ClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
       case _ =>
-        println("Role not available...")
+        println("Role not available... use <main>, <child> or <client>.")
         sys.exit(1)

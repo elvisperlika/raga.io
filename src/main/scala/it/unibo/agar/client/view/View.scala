@@ -1,18 +1,29 @@
 package it.unibo.agar.client.view
 
-import scala.swing.MainFrame
-import java.awt.Dimension
-import it.unibo.agar.client.utils.Parameters.WIDTH
 import it.unibo.agar.client.utils.Parameters.HEIGHT
-import javax.swing.border.Border
+import it.unibo.agar.client.utils.Parameters.WIDTH
+
+import java.awt.Dimension
+import scala.swing.MainFrame
+import java.awt.Color
 
 class View extends MainFrame:
 
   title = "Raga.io"
   preferredSize = new Dimension(WIDTH, HEIGHT)
 
+  enum NetworkStatus(val text: String):
+
+    case Online extends NetworkStatus("Online")
+    case Offline extends NetworkStatus("Offline")
+
+  var networkStatus: NetworkStatus = NetworkStatus.Offline
+
   import scala.swing._
   import scala.swing.BorderPanel.Position._
+
+  val networkStatusLabel = makeLabel(networkStatus.text)
+  showOffline()
 
   val nicknameTextField = makeTextField("Bob")
 
@@ -65,11 +76,21 @@ class View extends MainFrame:
     contents += roomCodeTextField
     contents += Swing.VStrut(smallVSpaceSize)
     contents += joinFriendsRoomButton
+    contents += Swing.VStrut(smallVSpaceSize)
+    contents += Swing.VStrut(smallVSpaceSize)
+    contents += networkStatusLabel
 
     border = Swing.EmptyBorder(30, 30, 30, 30)
     // Center alignment for all components
     contents.foreach(_.xLayoutAlignment = 0.5)
-  panel.background = new java.awt.Color(0, 255, 255, 100)
 
   contents = new BorderPanel:
     layout(panel) = Center
+
+  def showOnline(): Unit =
+    networkStatus = NetworkStatus.Online
+    networkStatusLabel.foreground = Color.GREEN
+
+  def showOffline(): Unit =
+    networkStatus = NetworkStatus.Offline
+    networkStatusLabel.foreground = Color.RED

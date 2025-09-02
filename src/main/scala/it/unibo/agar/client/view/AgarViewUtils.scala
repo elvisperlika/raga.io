@@ -1,6 +1,6 @@
-package it.unibo.agar.view
+package it.unibo.agar.client.view
 
-import it.unibo.agar.model.World
+import it.unibo.agar.client.model.World
 
 import java.awt.Color
 import java.awt.Graphics2D

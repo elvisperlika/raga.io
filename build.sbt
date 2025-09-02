@@ -31,3 +31,4 @@ assembly / assemblyMergeStrategy := {
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+scalacOptions += "-Wunused:imports"

@@ -1,32 +1,21 @@
-package it.unibo.agar.servers.mother
+package it.unibo.mother
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ClusterEvent
-import akka.cluster.ClusterEvent.MemberEvent
-import it.unibo.agar.servers.MyEvent
-import it.unibo.agar.servers.child.ChildServer
-import it.unibo.agar.servers.child.ChildServer.ChildEvent
-import akka.cluster.typed.Cluster
-import it.unibo.agar.client.controller.ClientActor.ClientEvent
-import it.unibo.agar.servers.mother.MotherServer.MotherEvent.ClientUp
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.ActorRef
+import it.unibo.protocol.ChildEvent
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import it.unibo.MembersManager
+import akka.actor.typed.receptionist.Receptionist
+import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.MotherEvent
 
-object MotherServer:
+object MotherActor:
 
   val serviceKey = ServiceKey[MotherEvent]("mother-server-service")
 
   var children: List[ActorRef[ChildEvent]] = List.empty
   var clients: List[ActorRef[ClientEvent]] = List.empty
-
-  enum MotherEvent:
-
-    case ClientUp(client: ActorRef[ClientEvent])
-    case ChildServerUp(child: ActorRef[ChildEvent])
-    case ClientLeft(client: ActorRef[ClientEvent])
-    case ChildServerLeft(child: ActorRef[ChildEvent])
 
   def apply(): Behavior[MotherEvent] = Behaviors.setup: ctx =>
     println("😍 Main Server up")

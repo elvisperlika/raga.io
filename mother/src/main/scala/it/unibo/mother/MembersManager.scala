@@ -1,4 +1,4 @@
-package it.unibo.agar.servers.mother
+package it.unibo
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
@@ -7,7 +7,7 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Subscribe
 import akka.actor.typed.ActorRef
-import it.unibo.agar.servers.mother.MotherServer.MotherEvent
+import it.unibo.protocol.MotherEvent
 
 object MembersManager:
 

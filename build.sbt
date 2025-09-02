@@ -1,25 +1,56 @@
+import sbt.Keys._
+import sbtassembly.AssemblyPlugin.autoImport.MergeStrategy
+import sbtassembly.AssemblyPlugin.autoImport._
+
 ThisBuild / version := "0.1.0-SNAPSHOT"
-
-ThisBuild / scalaVersion := "3.3.6"
 ThisBuild / scalafmtOnCompile := true
+ThisBuild / scalaVersion := "3.3.6"
 
-resolvers += "Akka library repository".at("https://repo.akka.io/maven")
-lazy val akkaVersion = "2.10.9"
-lazy val root = (project in file("."))
+lazy val commonSettings = Seq(
+  resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
+  libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-actor-typed" % "2.10.9", // For standard log configuration
+    "com.typesafe.akka" %% "akka-remote" % "2.10.9", // For akka remote
+    "com.typesafe.akka" %% "akka-cluster-typed" % "2.10.9", // Akka clustering module
+    "com.typesafe.akka" %% "akka-serialization-jackson" % "2.10.9",
+    "com.typesafe.akka" %% "akka-slf4j" % "2.10.9",
+    "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.10.9" % Test,
+    "ch.qos.logback" % "logback-classic" % "1.5.18",
+    "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
+  ),
+  scalacOptions += "-Wunused:imports"
+)
+
+// ---
+
+lazy val protocol = (project in file("protocol"))
   .settings(
-    name := "agar-io",
-    assembly / mainClass := Some("it.unibo.test.Main"),
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion, // For standard log configuration
-      "com.typesafe.akka" %% "akka-remote" % akkaVersion, // For akka remote
-      "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion, // akka clustering module
-      "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
-      "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
-      "ch.qos.logback" % "logback-classic" % "1.5.18",
-      "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
-    )
+    name := "protocol"
   )
+  .settings(commonSettings)
+
+lazy val motherServerModule = (project in file("mother"))
+  .settings(
+    name := "mother-server"
+  )
+  .settings(commonSettings)
+  .dependsOn(protocol)
+
+lazy val childServerModule = (project in file("child"))
+  .settings(
+    name := "child-server"
+  )
+  .settings(commonSettings)
+  .dependsOn(protocol)
+
+lazy val clientModule = (project in file("client"))
+  .settings(
+    name := "client"
+  )
+  .settings(commonSettings)
+  .dependsOn(protocol)
+
+// ---
 
 enablePlugins(AssemblyPlugin)
 
@@ -31,4 +62,3 @@ assembly / assemblyMergeStrategy := {
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
-scalacOptions += "-Wunused:imports"

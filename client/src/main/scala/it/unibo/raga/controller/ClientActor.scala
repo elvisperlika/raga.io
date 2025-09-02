@@ -1,30 +1,23 @@
-package it.unibo.agar.client.controller
+package it.unibo.raga.controller
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed.Cluster
+import akka.cluster.typed.Subscribe
 import it.unibo.agar.client.view.View
+import it.unibo.protocol.ClientEvent
 
 import scala.concurrent.duration.DurationInt
 import scala.swing.*
 import scala.swing.Swing.onEDT
-import akka.actor.typed.ActorRef
-import it.unibo.agar.client.controller.ClientActor.ClientEvent
-import akka.cluster.ClusterEvent
-import akka.cluster.ClusterEvent.ReachableMember
-import akka.cluster.typed.Subscribe
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberUp
 
 object ClientActor:
 
   val view = new View()
   view.visible = true
-
-  enum ClientEvent:
-
-    case MyMemberEvent(event: MemberEvent)
-    case Tick
 
   def apply(): Behavior[ClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
@@ -39,7 +32,6 @@ object ClientActor:
       import ClientEvent.*
       Behaviors.receiveMessage {
         case Tick =>
-          ctx.log.info("🏀 Client do Tick")
           onEDT(view.repaint())
           Behaviors.same
         case ClientEvent.MyMemberEvent(MemberUp(member)) =>

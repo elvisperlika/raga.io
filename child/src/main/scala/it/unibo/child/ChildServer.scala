@@ -4,16 +4,11 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.receptionist.Receptionist
-import it.unibo.agar.servers.MyEvent
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import it.unibo.protocol.ChildEvent
 
 object ChildServer:
-
-  enum ChildEvent extends MyEvent:
-
-    case X
-    case Y
 
   val ChildKey = ServiceKey[ChildEvent]("ChildServer")
 

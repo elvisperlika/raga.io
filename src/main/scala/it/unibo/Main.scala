@@ -48,3 +48,27 @@ object Main:
       case _ =>
         println("Role not available... use <main>, <child> or <client>.")
         sys.exit(1)
+
+@main
+def startClient(): Unit =
+  val dynamicConfigString = createConfigString(port = 19002)
+  val config = ConfigFactory
+    .parseString(dynamicConfigString)
+    .withFallback(ConfigFactory.load())
+  import Main.ACTOR_SYSTEM_NAME
+  ActorSystem[ClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
+
+@main
+def startMother(): Unit =
+  val dynamicConfigString = createConfigString(port = 19000)
+  val config = ConfigFactory
+    .parseString(dynamicConfigString)
+    .withFallback(ConfigFactory.load())
+  import Main.ACTOR_SYSTEM_NAME
+  ActorSystem[MotherEvent](MotherServer(), ACTOR_SYSTEM_NAME, config)
+
+private def createConfigString(hostname: String = "127.0.0.1", port: Int): String =
+  s"""
+    akka.remote.artery.canonical.hostname = "$hostname"
+    akka.remote.artery.canonical.port = "${port.toString}"
+  """

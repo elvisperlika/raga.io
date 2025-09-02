@@ -7,10 +7,11 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Subscribe
 import akka.actor.typed.ActorRef
+import it.unibo.agar.servers.mother.MotherServer.MotherEvent
 
 object MembersManager:
 
-  def apply(): Behavior[MemberEvent] = Behaviors.setup: ctx =>
+  def apply(motherRef: ActorRef[MotherEvent]): Behavior[MemberEvent] = Behaviors.setup: ctx =>
     ctx.log.info(s"🪀 Members Manager is Up")
     val cluster = Cluster(ctx.system)
     cluster.subscriptions ! Subscribe(ctx.self, classOf[MemberEvent])

@@ -10,19 +10,38 @@ import it.unibo.agar.servers.MyEvent
 import it.unibo.agar.servers.child.ChildServer
 import it.unibo.agar.servers.child.ChildServer.ChildEvent
 import akka.cluster.typed.Cluster
+import it.unibo.agar.client.controller.ClientActor.ClientEvent
+import it.unibo.agar.servers.mother.MotherServer.MotherEvent.ClientUp
+import akka.actor.typed.receptionist.ServiceKey
 
 object MotherServer:
 
-  var children: Set[ActorRef[ChildEvent]] = Set.empty
+  val serviceKey = ServiceKey[MotherEvent]("mother-server-service")
 
-  enum MotherEvent extends MyEvent:
+  var children: List[ActorRef[ChildEvent]] = List.empty
+  var clients: List[ActorRef[ClientEvent]] = List.empty
 
-    case MyMemberEvent(event: MemberEvent)
-    case ChildrenUpdated(listing: Receptionist.Listing)
+  enum MotherEvent:
 
-  def apply(): Behavior[MotherEvent] =
-    Behaviors.setup: ctx =>
-      println("😍 Main Server up")
-      ctx.spawn(MembersManager(), "MembersManager")
+    case ClientUp(client: ActorRef[ClientEvent])
+    case ChildServerUp(child: ActorRef[ChildEvent])
+    case ClientLeft(client: ActorRef[ClientEvent])
+    case ChildServerLeft(child: ActorRef[ChildEvent])
 
-      Behaviors.same
+  def apply(): Behavior[MotherEvent] = Behaviors.setup: ctx =>
+    println("😍 Main Server up")
+
+    ctx.system.receptionist ! Receptionist.Register(serviceKey, ctx.self)
+    ctx.spawn(MembersManager(ctx.self), "MembersManager")
+
+    import MotherEvent.*
+    Behaviors.receiveMessage {
+      case ClientUp(client) =>
+        Behaviors.same
+      case ChildServerUp(child) =>
+        Behaviors.same
+      case ClientLeft(client) =>
+        Behaviors.same
+      case ChildServerLeft(child) =>
+        Behaviors.same
+    }

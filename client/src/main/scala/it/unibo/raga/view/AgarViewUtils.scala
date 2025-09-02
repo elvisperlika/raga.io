@@ -1,9 +1,8 @@
-package it.unibo.agar.client.view
-
-import it.unibo.agar.client.model.World
+package it.unibo.raga.view
 
 import java.awt.Color
 import java.awt.Graphics2D
+import it.unibo.raga.model.World
 
 object AgarViewUtils:
 

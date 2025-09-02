@@ -1,4 +1,4 @@
-package it.unibo.agar.servers.child
+package it.unibo.child
 
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.Behavior
@@ -12,14 +12,14 @@ object ChildServer:
 
   val ChildKey = ServiceKey[ChildEvent]("ChildServer")
 
-  def apply(): Behavior[ChildEvent] =
-    Behaviors.setup: ctx =>
-      val cluster = Cluster(ctx.system)
-      cluster.manager ! Join(cluster.selfMember.address)
+  def apply(): Behavior[ChildEvent] = Behaviors.setup: ctx =>
+    println("🤖 Child Server up")
+    val cluster = Cluster(ctx.system)
+    cluster.manager ! Join(cluster.selfMember.address)
 
-      ctx.system.receptionist ! Receptionist.Register(ChildKey, ctx.self)
-      // ctx.log.info(s"🥶 ${cluster.selfAddress} -> Up")
-      Behaviors.receiveMessage:
-        case ChildEvent.X | ChildEvent.Y =>
-          println("🥶 Child Server received a message from main!")
-          Behaviors.same
+    ctx.system.receptionist ! Receptionist.Register(ChildKey, ctx.self)
+    // ctx.log.info(s"🥶 ${cluster.selfAddress} -> Up")
+    Behaviors.receiveMessage:
+      case ChildEvent.X | ChildEvent.Y =>
+        println("🥶 Child Server received a message from main!")
+        Behaviors.same

@@ -1,4 +1,4 @@
-package it.unibo.agar.client.model
+package it.unibo.raga.model
 
 import scala.util.Random
 

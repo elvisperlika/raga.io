@@ -1,13 +1,13 @@
-package it.unibo.agar.client.view
+package it.unibo.raga.view
 
-import it.unibo.agar.client.model.MockGameStateManager
+import it.unibo.raga.model.MockGameStateManager
 
 import java.awt.Graphics2D
 import scala.swing.*
 
 class LocalView(manager: MockGameStateManager, playerId: String) extends MainFrame:
 
-  title = s"Agar.io - Local View ($playerId)"
+  title = s"Raga.io - Local View ($playerId)"
   preferredSize = new Dimension(400, 400)
 
   contents = new Panel:

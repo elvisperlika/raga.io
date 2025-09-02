@@ -1,11 +1,10 @@
-package it.unibo.agar.client.view
-
-import it.unibo.agar.client.utils.Parameters.HEIGHT
-import it.unibo.agar.client.utils.Parameters.WIDTH
+package it.unibo.raga.view
 
 import java.awt.Dimension
 import scala.swing.MainFrame
 import java.awt.Color
+import it.unibo.raga.utils.Parameters.WIDTH
+import it.unibo.raga.utils.Parameters.HEIGHT
 
 class View extends MainFrame:
 

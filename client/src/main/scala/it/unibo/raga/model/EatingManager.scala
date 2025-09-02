@@ -1,4 +1,4 @@
-package it.unibo.agar.client.model
+package it.unibo.raga.model
 
 object EatingManager:
 

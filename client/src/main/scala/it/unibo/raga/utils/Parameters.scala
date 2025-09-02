@@ -1,4 +1,4 @@
-package it.unibo.agar.client.utils
+package it.unibo.raga.utils
 
 object Parameters:
 

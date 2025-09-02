@@ -1,13 +1,12 @@
-package it.unibo.agar.client.view
-
-import it.unibo.agar.client.model.MockGameStateManager
+package it.unibo.raga.view
 
 import java.awt.Graphics2D
 import scala.swing.*
+import it.unibo.raga.model.MockGameStateManager
 
 class GlobalView(manager: MockGameStateManager) extends MainFrame:
 
-  title = "Agar.io - Global View"
+  title = "Raga.io - Global View"
   preferredSize = new Dimension(800, 800)
 
   contents = new Panel:

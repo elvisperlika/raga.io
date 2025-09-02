@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.ActorSystem
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
-import it.unibo.agar.servers.child.ChildServer
+
 import it.unibo.protocol.ConfigParameters.CHILD_1_PORT
 
 object ChildServerApp:

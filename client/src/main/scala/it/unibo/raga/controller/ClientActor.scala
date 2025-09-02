@@ -7,12 +7,12 @@ import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Subscribe
-import it.unibo.agar.client.view.View
 import it.unibo.protocol.ClientEvent
 
 import scala.concurrent.duration.DurationInt
 import scala.swing.*
 import scala.swing.Swing.onEDT
+import it.unibo.raga.view.View
 
 object ClientActor:
 

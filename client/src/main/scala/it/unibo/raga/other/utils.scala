@@ -1,4 +1,4 @@
-package it.unibo.agar.client
+package it.unibo.raga.other
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior

@@ -7,17 +7,16 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import it.unibo.protocol.ChildEvent
+import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 
 object ChildServer:
-
-  val ChildKey = ServiceKey[ChildEvent]("ChildServer")
 
   def apply(): Behavior[ChildEvent] = Behaviors.setup: ctx =>
     println("🤖 Child Server up")
     val cluster = Cluster(ctx.system)
     cluster.manager ! Join(cluster.selfMember.address)
 
-    ctx.system.receptionist ! Receptionist.Register(ChildKey, ctx.self)
+    ctx.system.receptionist ! Receptionist.Register(CHILD_SERVICE_KEY, ctx.self)
     // ctx.log.info(s"🥶 ${cluster.selfAddress} -> Up")
     Behaviors.receiveMessage:
       case ChildEvent.X | ChildEvent.Y =>

@@ -8,6 +8,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.MotherEvent
+import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 
 private case class MotherState(
     children: List[ActorRef[ChildEvent]] = List.empty,
@@ -16,12 +17,10 @@ private case class MotherState(
 
 object MotherActor:
 
-  val serviceKey = ServiceKey[MotherEvent]("mother-server-service")
-
   def apply(): Behavior[MotherEvent] = Behaviors.setup: ctx =>
     println("😍 Main Server up")
 
-    ctx.system.receptionist ! Receptionist.Register(serviceKey, ctx.self)
+    ctx.system.receptionist ! Receptionist.Register(MOTHER_SERVICE_KEY, ctx.self)
     ctx.spawn(MembersManager(ctx.self), "MembersManager")
     behavior(state = MotherState())
 

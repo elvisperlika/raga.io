@@ -11,7 +11,8 @@ import it.unibo.protocol.ConfigParameters.CLIENT_1_PORT
 object ClientApp:
 
   def main(args: Array[String]): Unit =
-    val port = CLIENT_1_PORT
+    var port = CLIENT_1_PORT.toString
+    if args.size == 1 then port = args(0)
     val dynamicConfigString =
       s"""
         akka.remote.artery.canonical.hostname = "$LOCALHOST"

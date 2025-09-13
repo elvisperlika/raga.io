@@ -7,6 +7,7 @@ import it.unibo.raga.controller.ClientActor
 import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import akka.actor.typed.ActorSystem
 import it.unibo.protocol.ConfigParameters.CLIENT_1_PORT
+import it.unibo.raga.controller.ClientActor.LocalClientEvent
 
 object ClientApp:
 
@@ -21,4 +22,4 @@ object ClientApp:
     val config = ConfigFactory
       .parseString(dynamicConfigString)
       .withFallback(ConfigFactory.load())
-    ActorSystem[ClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
+    ActorSystem[ClientEvent | LocalClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)

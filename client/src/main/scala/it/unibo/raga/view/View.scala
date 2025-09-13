@@ -1,12 +1,15 @@
 package it.unibo.raga.view
 
+import akka.actor.typed.ActorRef
+import it.unibo.raga.controller.ClientActor.LocalClientEvent
+import it.unibo.raga.utils.Parameters.HEIGHT
+import it.unibo.raga.utils.Parameters.WIDTH
+
+import java.awt.Color
 import java.awt.Dimension
 import scala.swing.MainFrame
-import java.awt.Color
-import it.unibo.raga.utils.Parameters.WIDTH
-import it.unibo.raga.utils.Parameters.HEIGHT
 
-class View extends MainFrame:
+class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
 
   title = "Raga.io"
   preferredSize = new Dimension(WIDTH, HEIGHT)
@@ -16,12 +19,10 @@ class View extends MainFrame:
     case Online extends NetworkStatus("Online")
     case Offline extends NetworkStatus("Offline")
 
-  var networkStatus: NetworkStatus = NetworkStatus.Offline
-
   import scala.swing._
   import scala.swing.BorderPanel.Position._
 
-  val networkStatusLabel = makeLabel(networkStatus.text)
+  val networkStatusLabel = makeLabel("")
   showOffline()
 
   val nicknameTextField = makeTextField("Bob")
@@ -87,9 +88,17 @@ class View extends MainFrame:
     layout(panel) = Center
 
   def showOnline(): Unit =
-    networkStatus = NetworkStatus.Online
+    networkStatusLabel.text = NetworkStatus.Online.text
     networkStatusLabel.foreground = Color.GREEN
 
   def showOffline(): Unit =
-    networkStatus = NetworkStatus.Offline
+    networkStatusLabel.text = NetworkStatus.Offline.text
     networkStatusLabel.foreground = Color.RED
+
+  listenTo(joinRandomRoomButton, createAndJoinRoomButton, joinFriendsRoomButton)
+  reactions += { case event.ButtonClicked(btn) =>
+    btn match
+      case `joinRandomRoomButton` => clientActor ! LocalClientEvent.JoinRandomRoom
+      case `createAndJoinRoomButton` => clientActor ! LocalClientEvent.CreateAndJoinRoom
+      case `joinFriendsRoomButton` => clientActor ! LocalClientEvent.JoinFriendsRoom
+  }

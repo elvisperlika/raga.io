@@ -21,4 +21,4 @@ object ChildServerApp:
     val config = ConfigFactory
       .parseString(dynamicConfigString)
       .withFallback(ConfigFactory.load())
-    ActorSystem[ChildEvent](ChildServer(), ACTOR_SYSTEM_NAME, config)
+    ActorSystem[ChildEvent](ChildActor(), ACTOR_SYSTEM_NAME, config)

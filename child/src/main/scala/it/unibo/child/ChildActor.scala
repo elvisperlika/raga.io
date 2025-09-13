@@ -24,7 +24,7 @@ object ChildActor:
   def work(worlds: Seq[World]): Behavior[ChildEvent] = Behaviors.receiveMessage:
     case RequestWorld(replyTo) =>
       println(s"🤖 World requested by ${replyTo.path}")
-      val newPlayer = Player("id", 500, 500, 100)
+      val newPlayer = Player("id", 500, 500, 100) // TODO: remove hardcoded player
       val newWorld: World = World(1000, 1000, players = Seq(newPlayer), Seq.empty)
       replyTo ! RemoteWorld(newWorld, newPlayer)
       work(worlds :+ newWorld)

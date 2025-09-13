@@ -99,7 +99,7 @@ object ClientActor:
       manager.ask[RemoteWorld](replyTo => RequestWorld(replyTo))
     response.onComplete {
       case Success(remoteWorld) => ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player)
-      case Failure(_) =>
+      case Failure(ex) => ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
     }
     Behaviors.same
 

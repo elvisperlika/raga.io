@@ -3,17 +3,16 @@ package it.unibo.mother
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import it.unibo.protocol.ChildEvent
+import it.unibo.protocol.ChildServerLeft
+import it.unibo.protocol.ChildServerUp
 import it.unibo.protocol.ClientEvent
-import it.unibo.protocol.MotherEvent
-import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
+import it.unibo.protocol.ClientLeft
 import it.unibo.protocol.ClientUp
 import it.unibo.protocol.GamaManagerAddress
-import it.unibo.protocol.ChildServerUp
-import it.unibo.protocol.ClientLeft
-import it.unibo.protocol.ChildServerLeft
+import it.unibo.protocol.MotherEvent
+import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 
 private case class MotherState(
     children: List[ActorRef[ChildEvent]] = List.empty,

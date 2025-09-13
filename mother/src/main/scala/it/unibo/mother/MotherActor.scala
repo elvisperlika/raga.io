@@ -35,11 +35,13 @@ object MotherActor:
         case ClientUp(client) =>
           println(s"😍 Client Up: ${client.path}")
           // TODO: find the child with lowest work balance and send to client
-          val freeChild = state.children.last
-          if freeChild == null then println("🛑 No child servers available")
-          else
-            println(s"😍 Assigning child server ${freeChild.path} to client ${client.path}")
-            client ! GamaManagerAddress(freeChild)
+          val freeChild = state.children.lastOption
+          freeChild match
+            case None => println("😍 No child servers available")
+            case Some(c) =>
+              println(s"😍 Assigning child server ${c.path} to client ${client.path}")
+              client ! GamaManagerAddress(c)
+
           behavior(state.copy(clients = client :: state.clients))
 
         case ChildServerUp(child) =>

@@ -8,7 +8,7 @@ import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 
 import it.unibo.protocol.ConfigParameters.CHILD_1_PORT
 
-object ChildServerApp:
+object ChildLauncher:
 
   def main(args: Array[String]): Unit =
     var port = CHILD_1_PORT.toString

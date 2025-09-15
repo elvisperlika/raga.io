@@ -102,3 +102,5 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
       case `createAndJoinRoomButton` => clientActor ! LocalClientEvent.CreateAndJoinRoom
       case `joinFriendsRoomButton` => clientActor ! LocalClientEvent.JoinFriendsRoom
   }
+
+  def getNickname(): String = nicknameTextField.text.trim

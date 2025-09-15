@@ -2,7 +2,7 @@ package it.unibo.raga.view
 
 import java.awt.Color
 import java.awt.Graphics2D
-import it.unibo.raga.model.World
+import it.unibo.raga.model.LocalWorld
 
 object AgarViewUtils:
 
@@ -22,7 +22,7 @@ object AgarViewUtils:
 
   def drawWorld(
       g: Graphics2D,
-      world: World,
+      world: LocalWorld,
       offsetX: Double = 0,
       offsetY: Double = 0
   ): Unit =

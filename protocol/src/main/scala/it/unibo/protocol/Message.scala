@@ -10,7 +10,7 @@ trait Message
 
 trait ChildEvent extends Message
 
-case class RequestWorld(ref: ActorRef[RemoteWorld]) extends ChildEvent
+case class RequestWorld(nickName: String, ref: ActorRef[RemoteWorld]) extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */

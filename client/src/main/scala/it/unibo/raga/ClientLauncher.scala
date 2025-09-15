@@ -8,18 +8,25 @@ import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import akka.actor.typed.ActorSystem
 import it.unibo.protocol.ConfigParameters.CLIENT_1_PORT
 import it.unibo.raga.controller.ClientActor.LocalClientEvent
+import it.unibo.protocol.ConfigParameters.CLIENT_2_PORT
 
-object ClientLauncher:
+object BobClientLauncher:
 
   def main(args: Array[String]): Unit =
-    var port = CLIENT_1_PORT.toString
-    if args.size == 1 then port = args(0)
-    val dynamicConfigString =
-      s"""
-        akka.remote.artery.canonical.hostname = "$LOCALHOST"
-        akka.remote.artery.canonical.port = "$port"
-      """
-    val config = ConfigFactory
-      .parseString(dynamicConfigString)
-      .withFallback(ConfigFactory.load())
-    ActorSystem[ClientEvent | LocalClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
+    startUp(CLIENT_1_PORT, "Bob")
+
+object AliceClientLauncher:
+
+  def main(args: Array[String]): Unit =
+    startUp(CLIENT_2_PORT, "Alice")
+
+def startUp(port: Int, name: String): Unit =
+  val dynamicConfigString =
+    s"""
+      akka.remote.artery.canonical.hostname = "$LOCALHOST"
+      akka.remote.artery.canonical.port = "$port"
+    """
+  val config = ConfigFactory
+    .parseString(dynamicConfigString)
+    .withFallback(ConfigFactory.load())
+  ActorSystem[ClientEvent | LocalClientEvent](ClientActor(name), ACTOR_SYSTEM_NAME, config)

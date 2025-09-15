@@ -52,3 +52,7 @@ object AgarViewUtils:
       g.setColor(playerBorderColor)
       val (labelX, labelY) = toScreenLabel(player.x, player.y)
       g.drawString(player.id, labelX, labelY)
+      // Draw player position above the player
+      val positionString = f"(${player.x}%.1f, ${player.y}%.1f)"
+      val positionOffsetY = 15 // pixels above the label
+      g.drawString(positionString, labelX, labelY - positionOffsetY)

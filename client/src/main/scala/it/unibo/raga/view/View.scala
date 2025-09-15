@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.Dimension
 import scala.swing.MainFrame
 
-class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
+class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFrame:
 
   title = "Raga.io"
   preferredSize = new Dimension(WIDTH, HEIGHT)
@@ -25,7 +25,7 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
   val networkStatusLabel = makeLabel("")
   showOffline()
 
-  val nicknameTextField = makeTextField("Bob")
+  val nicknameTextField = makeTextField(name)
 
   val joinRandomRoomButton = makeButton("Join random battle")
 

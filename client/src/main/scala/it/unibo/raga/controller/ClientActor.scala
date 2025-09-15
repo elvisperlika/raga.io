@@ -36,7 +36,7 @@ import it.unibo.raga.model.LocalWorld
 import it.unibo.raga.model.LocalPlayer
 import it.unibo.raga.model.LocalFood
 import it.unibo.raga.view.LocalView
-import it.unibo.raga.model.GameStateManagerImpl
+import it.unibo.raga.model.ImmutableGameStateManager
 
 object ClientActor:
 
@@ -92,7 +92,7 @@ object ClientActor:
           val localFoods = remoteWorld.foods.map(f => LocalFood(f.id, f.x, f.y, f.mass))
           val localWorld = LocalWorld(remoteWorld.width, remoteWorld.height, localPlayers, localFoods)
           val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
-          val model = new GameStateManagerImpl(localWorld)
+          val model = new ImmutableGameStateManager(localWorld)
           val gameView = new LocalView(model.world, player.id, ctx.self)
           gameView.visible = true
           run(model, gameView, localPlayer)
@@ -127,7 +127,7 @@ object ClientActor:
     *   Player controlled by this client
     */
   def run(
-      model: GameStateManagerImpl,
+      model: ImmutableGameStateManager,
       gameView: LocalView,
       player: LocalPlayer
   ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>

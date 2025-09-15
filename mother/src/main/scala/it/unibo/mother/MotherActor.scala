@@ -22,8 +22,7 @@ private case class MotherState(
 object MotherActor:
 
   def apply(): Behavior[MotherEvent] = Behaviors.setup: ctx =>
-    println("😍 Main Server up")
-
+    ctx.log.info("😍 Main Server up")
     ctx.system.receptionist ! Receptionist.Register(MOTHER_SERVICE_KEY, ctx.self)
     ctx.spawn(MembersManager(ctx.self), "MembersManager")
     behavior(state = MotherState())
@@ -32,25 +31,26 @@ object MotherActor:
     Behaviors.receive: (ctx, msg) =>
       msg match
         case ClientUp(client) =>
-          println(s"😍 Client Up: ${client.path}")
+          ctx.log.info(s"😍 Client Up: ${client.path}")
+
           // TODO: find the child with lowest work balance and send to client
           val freeChild = state.children.lastOption
           freeChild match
-            case None => println("😍 No child servers available")
+            case None => ctx.log.info("😍 No child servers available")
             case Some(c) =>
-              println(s"😍 Assigning child server ${c.path} to client ${client.path}")
+              ctx.log.info(s"😍 Assigning child server ${c.path} to client ${client.path}")
               client ! GamaManagerAddress(c)
 
           behavior(state.copy(clients = client :: state.clients))
 
         case ChildServerUp(child) =>
-          println(s"😍 Child Up: ${child.path}")
+          ctx.log.info(s"😍 Child Up: ${child.path}")
           behavior(state.copy(children = child :: state.children))
 
         case ClientLeft(client) =>
-          println(s"😍 Client Left: ${client.path}")
+          ctx.log.info(s"😍 Client Left: ${client.path}")
           behavior(state.copy(clients = state.clients.filterNot(_ == client)))
 
         case ChildServerLeft(child) =>
-          println(s"😍 Child Left: ${child.path}")
+          ctx.log.info(s"😍 Child Left: ${child.path}")
           behavior(state.copy(children = state.children.filterNot(_ == child)))

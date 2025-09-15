@@ -15,10 +15,9 @@ object AgarViewUtils:
     Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray)
 
   private def playerColor(id: String): Color = id match
-    case pid if pid.startsWith("p") =>
+    case pid =>
       val idx = pid.drop(1).toIntOption.getOrElse(0)
       playerPalette(idx % playerPalette.length)
-    case _ => Color.gray
 
   def drawWorld(
       g: Graphics2D,

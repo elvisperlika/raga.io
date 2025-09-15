@@ -6,7 +6,7 @@ trait GameStateManager:
 
   def movePlayerDirection(id: String, dx: Double, dy: Double): Unit
 
-case class GameStateManagerImpl(
+case class ImmutableGameStateManager(
     world: LocalWorld,
     speed: Double = 10.0,
     private var playerDirection: (String, (Double, Double)) = ("", (0.0, 0.0))
@@ -14,10 +14,10 @@ case class GameStateManagerImpl(
 
   def getWorld: LocalWorld = world
 
-  def movePlayerDirection(id: String, dx: Double, dy: Double): GameStateManagerImpl =
+  def movePlayerDirection(id: String, dx: Double, dy: Double): ImmutableGameStateManager =
     copy(playerDirection = (id, (dx, dy)))
 
-  def tick(): GameStateManagerImpl =
+  def tick(): ImmutableGameStateManager =
     val (id, (dx, dy)) = playerDirection
     world.playerById(id) match
       case Some(player) =>

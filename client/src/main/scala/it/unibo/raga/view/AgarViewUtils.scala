@@ -2,7 +2,7 @@ package it.unibo.raga.view
 
 import java.awt.Color
 import java.awt.Graphics2D
-import it.unibo.raga.model.World
+import it.unibo.raga.model.LocalWorld
 
 object AgarViewUtils:
 
@@ -15,14 +15,13 @@ object AgarViewUtils:
     Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray)
 
   private def playerColor(id: String): Color = id match
-    case pid if pid.startsWith("p") =>
+    case pid =>
       val idx = pid.drop(1).toIntOption.getOrElse(0)
       playerPalette(idx % playerPalette.length)
-    case _ => Color.gray
 
   def drawWorld(
       g: Graphics2D,
-      world: World,
+      world: LocalWorld,
       offsetX: Double = 0,
       offsetY: Double = 0
   ): Unit =
@@ -53,3 +52,7 @@ object AgarViewUtils:
       g.setColor(playerBorderColor)
       val (labelX, labelY) = toScreenLabel(player.x, player.y)
       g.drawString(player.id, labelX, labelY)
+      // Draw player position above the player
+      val positionString = f"(${player.x}%.1f, ${player.y}%.1f)"
+      val positionOffsetY = 15 // pixels above the label
+      g.drawString(positionString, labelX, labelY - positionOffsetY)

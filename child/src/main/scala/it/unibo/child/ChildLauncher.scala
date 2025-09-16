@@ -1,14 +1,13 @@
 package it.unibo.child
 
-import it.unibo.protocol.ConfigParameters.LOCALHOST
-import com.typesafe.config.ConfigFactory
 import akka.actor.typed.ActorSystem
+import com.typesafe.config.ConfigFactory
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
-
 import it.unibo.protocol.ConfigParameters.CHILD_1_PORT
+import it.unibo.protocol.ConfigParameters.LOCALHOST
 
-object ChildServerApp:
+object ChildLauncher:
 
   def main(args: Array[String]): Unit =
     var port = CHILD_1_PORT.toString

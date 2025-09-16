@@ -31,6 +31,6 @@ Choose your Akka features thoughtfully, considering the trade-offs between consi
 For example, using a `Cluster Singleton` can simplify global state management (such as the authoritative game state or food generation),
 but it introduces a single point of failure and may limit scalability. 
 
-Justify each architectural choice by explaining how it impacts the system's reliability, responsiveness, and maintainability. 
-Strive for a solution where actors collaborate to maintain a consistent world view without unnecessary centralization, 
+Justify each architectural choice by explaining how it impacts the system's reliability, responsiveness, and maintainability.
+Strive for a solution where actors collaborate to maintain a consistent world view without unnecessary centralization,
 leveraging Akka's distributed features to balance load and resilience across the cluster.

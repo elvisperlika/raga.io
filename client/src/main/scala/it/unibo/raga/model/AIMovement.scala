@@ -10,7 +10,7 @@ object AIMovement:
     *   the current game world containing players and food
     * @return
     */
-  def nearestFood(player: String, world: World): Option[Food] =
+  def nearestFood(player: String, world: LocalWorld): Option[LocalFood] =
     world.foods
       .sortBy(food => world.playerById(player).map(p => p.distanceTo(food)).getOrElse(Double.MaxValue))
       .headOption

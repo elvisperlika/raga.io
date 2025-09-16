@@ -6,18 +6,19 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.Cluster
 import it.unibo.protocol.ChildEvent
+import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
+import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
+import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
+import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
+import it.unibo.protocol.Food
+import it.unibo.protocol.Player
+import it.unibo.protocol.RemoteWorld
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.World
-import it.unibo.protocol.Player
-import it.unibo.protocol.RemoteWorld
-import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
-import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
-import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
-import it.unibo.protocol.Food
-import it.unibo.protocol.ConfigParameters.CENTER_X
-import it.unibo.protocol.ConfigParameters.CENTER_Y
-import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
+
+import scala.concurrent.duration.DurationInt
 
 object ChildActor:
 
@@ -34,14 +35,19 @@ object ChildActor:
         DEFAULT_FOOD_SIZE
       )
     )
-    work(world = World(DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT, Seq.empty, foods))
+    work(world = World(DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT, Seq.empty, foods), players = Map.empty)
 
-  def work(world: World): Behavior[ChildEvent] = Behaviors.receive: (ctx, msg) =>
-    msg match
-      case RequestWorld(nickName, replyTo) =>
-        ctx.log.info(s"World requested by ${replyTo.path} with nickname $nickName")
-        // TODO: find empty space in the world to spawn the player
-        val newPlayer = Player(nickName, CENTER_X, CENTER_Y, DEFAULT_PLAYER_SIZE)
-        val newWorld = world.copy(players = world.players :+ newPlayer)
-        replyTo ! RemoteWorld(newWorld, newPlayer)
-        work(newWorld)
+  type ID = String
+
+  def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] =
+    Behaviors.receive: (ctx, msg) =>
+      msg match
+        case RequestWorld(nickName, replyTo, playerRef) =>
+          ctx.log.info(s"🤖 World requested by ${replyTo.path} with nickname $nickName")
+          // TODO: find empty space in the world to spawn the player
+          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
+          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+          val newWorld = world.copy(players = world.players :+ newPlayer)
+          replyTo ! RemoteWorld(newWorld, newPlayer)
+          work(newWorld, players + (nickName -> playerRef))

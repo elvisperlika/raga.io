@@ -1,14 +1,14 @@
 package it.unibo.raga
 
-import com.typesafe.config.ConfigFactory
-import it.unibo.protocol.ConfigParameters.LOCALHOST
-import it.unibo.protocol.ClientEvent
-import it.unibo.raga.controller.ClientActor
-import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import akka.actor.typed.ActorSystem
+import com.typesafe.config.ConfigFactory
+import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import it.unibo.protocol.ConfigParameters.CLIENT_1_PORT
-import it.unibo.raga.controller.ClientActor.LocalClientEvent
 import it.unibo.protocol.ConfigParameters.CLIENT_2_PORT
+import it.unibo.protocol.ConfigParameters.LOCALHOST
+import it.unibo.raga.controller.ClientActor
+import it.unibo.raga.controller.ClientActor.LocalClientEvent
 
 object BobClientLauncher:
 

@@ -14,29 +14,27 @@ import akka.cluster.typed.Subscribe
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.Food
+import it.unibo.protocol.GamaManagerAddress
+import it.unibo.protocol.JoinNetwork
 import it.unibo.protocol.Player
 import it.unibo.protocol.RemoteWorld
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
 import it.unibo.protocol.World
+import it.unibo.raga.model.ImmutableGameStateManager
+import it.unibo.raga.model.LocalFood
+import it.unibo.raga.model.LocalPlayer
+import it.unibo.raga.model.LocalWorld
+import it.unibo.raga.view.LocalView
 import it.unibo.raga.view.View
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.swing.*
 import scala.swing.Swing.onEDT
 import scala.util.Failure
 import scala.util.Success
-import it.unibo.protocol.JoinNetwork
-import it.unibo.protocol.UpdateView
-import it.unibo.protocol.GamaManagerAddress
-import it.unibo.raga.model.MockGameStateManager
-import it.unibo.raga.model.LocalWorld
-import it.unibo.raga.model.LocalPlayer
-import it.unibo.raga.model.LocalFood
-import it.unibo.raga.view.LocalView
-import it.unibo.raga.model.ImmutableGameStateManager
 
 object ClientActor:
 
@@ -46,14 +44,14 @@ object ClientActor:
     case CreateAndJoinRoom
     case JoinFriendsRoom
     case UpdateView
-    case ReceivedWorld(world: World, player: Player)
+    case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
     case MovePlayer(dx: Double, dy: Double)
 
   var manager: Option[ActorRef[ChildEvent]] = None
 
-  def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
+  def apply(name: String): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
-    var view = new View(ctx.self)
+    var view = new View(ctx.self, name)
     view.visible = true
 
     val cluster = Cluster(ctx.system)
@@ -86,22 +84,20 @@ object ClientActor:
           manager = Some(managerRef)
           Behaviors.same
 
-        case LocalClientEvent.ReceivedWorld(remoteWorld, player) =>
+        case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>
           ctx.log.info(s"🏀 World received: $remoteWorld")
-          val localPlayers = remoteWorld.players.map(p => LocalPlayer(p.id, p.x, p.y, p.mass))
-          val localFoods = remoteWorld.foods.map(f => LocalFood(f.id, f.x, f.y, f.mass))
-          val localWorld = LocalWorld(remoteWorld.width, remoteWorld.height, localPlayers, localFoods)
+          val localWorld = createLocalWorld(remoteWorld)
           val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
           val model = new ImmutableGameStateManager(localWorld)
           val gameView = new LocalView(model.world, player.id, ctx.self)
           gameView.visible = true
-          run(model, gameView, localPlayer)
+          run(model, gameView, localPlayer, managerRef)
 
         case _ =>
           ctx.log.info(s"🏀 Message not recognized: $msg")
           Behaviors.same
 
-  def requestWorld(
+  private def requestWorld(
       nickName: String,
       ctx: ActorContext[ClientEvent | LocalClientEvent],
       manager: ActorRef[ChildEvent]
@@ -111,9 +107,9 @@ object ClientActor:
     given ExecutionContext = ctx.executionContext
 
     ctx.log.info(s"🏀 Requesting World to ${manager.path}...")
-    manager.ask[RemoteWorld](replyTo => RequestWorld(nickName, replyTo)).onComplete {
+    manager.ask[RemoteWorld](replyTo => RequestWorld(nickName, replyTo, ctx.self)).onComplete {
       case Success(remoteWorld) =>
-        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player)
+        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
       case Failure(ex) =>
         ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
     }
@@ -129,7 +125,8 @@ object ClientActor:
   def run(
       model: ImmutableGameStateManager,
       gameView: LocalView,
-      player: LocalPlayer
+      player: LocalPlayer,
+      managerRef: ActorRef[ChildEvent]
   ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Run the game")
 
@@ -142,13 +139,39 @@ object ClientActor:
           val newModel = model.tick()
           gameView.updateWorld(newModel.world)
           gameView.repaint()
-          run(newModel, gameView, player)
+          run(newModel, gameView, player, managerRef)
+
         case LocalClientEvent.MovePlayer(dx, dy) =>
           ctx.log.info(s"🏀 Move player $player with delta ($dx, $dy)")
           val newModel = model.movePlayerDirection(player.id, dx, dy)
-          run(newModel, gameView, player)
+          run(newModel, gameView, player, managerRef)
+
         case _ =>
           ctx.log.info(s"🏀 Message not recognized...")
-          run(model, gameView, player)
+          run(model, gameView, player, managerRef)
       }
     }
+
+  /** Convert a remote world to a local world.
+    *
+    * @param remoteWorld
+    *   Remote world received from the server
+    * @return
+    *   Local world to be used by the client
+    */
+  private def createLocalWorld(remoteWorld: World): LocalWorld =
+    val localPlayers = remoteWorld.players.map(p => LocalPlayer(p.id, p.x, p.y, p.mass))
+    val localFoods = remoteWorld.foods.map(f => LocalFood(f.id, f.x, f.y, f.mass))
+    LocalWorld(remoteWorld.width, remoteWorld.height, localPlayers, localFoods)
+
+  /** Convert a local world to a remote world.
+    *
+    * @param localWorld
+    *   Local world used by the client
+    * @return
+    *   Remote world to be sent to the server
+    */
+  private def createRemoteWorld(localWorld: LocalWorld): World =
+    val remotePlayers = localWorld.players.map(p => Player(p.id, p.x, p.y, p.mass))
+    val remoteFoods = localWorld.foods.map(f => Food(f.id, f.x, f.y, f.mass))
+    World(localWorld.width, localWorld.height, remotePlayers, remoteFoods)

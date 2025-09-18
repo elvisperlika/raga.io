@@ -26,6 +26,7 @@ import it.unibo.protocol.World
 import it.unibo.raga.controller.WorldConverter.*
 import it.unibo.raga.model.ImmutableGameStateManager
 import it.unibo.raga.model.LocalPlayer
+import it.unibo.raga.model.LocalWorld
 import it.unibo.raga.view.LocalView
 import it.unibo.raga.view.View
 
@@ -131,7 +132,7 @@ object ClientActor:
       managerRef: ActorRef[ChildEvent],
       isSynced: Boolean = true
   ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.withTimers: timer =>
-    timer.startTimerAtFixedRate(LocalClientEvent.Tick, 100.milliseconds)
+    timer.startTimerAtFixedRate(LocalClientEvent.Tick, (1000 / 60).millis) // 60 FPS
     Behaviors.receive: (ctx, msg) =>
       msg match
         case LocalClientEvent.Tick if isSynced =>
@@ -143,10 +144,10 @@ object ClientActor:
           managerRef ! RequestRemoteWorldUpdate(remoteWorld, (player.id, ctx.self))
           run(newModel, gameView, player, managerRef, isSynced = false)
 
-        case ReceivedRemoteWorld(world) =>
+        case ReceivedRemoteWorld(remoteWorld) =>
           ctx.log.info(s"🏀 World received")
-          val localWorld = createLocalWorld(world)
-          val newModel = new ImmutableGameStateManager(localWorld)
+          val world = createLocalWorld(remoteWorld)
+          val newModel = new ImmutableGameStateManager(world)
           gameView.updateWorld(newModel.world)
           gameView.repaint()
           run(newModel, gameView, player, managerRef, isSynced = true)

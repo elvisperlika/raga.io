@@ -11,6 +11,7 @@ import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
+import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
 import it.unibo.protocol.Food
 import it.unibo.protocol.ID
 import it.unibo.protocol.Player
@@ -30,14 +31,7 @@ object ChildActor:
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CHILD_SERVICE_KEY, ctx.self)
 
-    val foods = (1 to 100).map(i =>
-      Food(
-        s"food-$i",
-        scala.util.Random.nextDouble() * DEFAULT_WORLD_WIDTH,
-        scala.util.Random.nextDouble() * DEFAULT_WORLD_HEIGHT,
-        DEFAULT_FOOD_SIZE
-      )
-    )
+    val foods = generateFoods(INIT_FOOD_NUMBER)
     work(world = World(DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT, Seq.empty, foods), players = Map.empty)
 
   def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
@@ -66,12 +60,45 @@ object ChildActor:
           })
           work(mergedWorld, players)
 
+  /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
+    *
+    * @param oldWorld
+    *   Current world state
+    * @param newWorld
+    *   Updated world state from a player
+    * @param playerId
+    *   ID of the player requesting the update
+    * @return
+    *   Merged world state
+    */
   def mergeWorlds(oldWorld: World, newWorld: World, playerId: ID): World =
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)
     val requestingPlayer = newWorld.players.filter(_.id == playerId)
+    val extraFoods = generateExtraFoods(newWorld.foods.size)
     World(
-      width = oldWorld.width,
-      height = oldWorld.height,
+      width = DEFAULT_WORLD_WIDTH,
+      height = DEFAULT_WORLD_HEIGHT,
       players = otherPlayers ++ requestingPlayer,
-      foods = newWorld.foods
+      foods = newWorld.foods ++ extraFoods
+    )
+
+  def generateExtraFoods(currentFoodCount: Int): Seq[Food] =
+    val foodsToGenerate = INIT_FOOD_NUMBER - currentFoodCount
+    generateFoods(foodsToGenerate)
+
+  /** Generates n food items at random positions within the world bounds.
+    *
+    * @param n
+    *   Number of food items to generate
+    * @return
+    *   Sequence of generated Food items
+    */
+  def generateFoods(n: Int): Seq[Food] =
+    (1 to n) map (i =>
+      Food(
+        s"food-$i",
+        scala.util.Random.nextDouble() * DEFAULT_WORLD_WIDTH,
+        scala.util.Random.nextDouble() * DEFAULT_WORLD_HEIGHT,
+        DEFAULT_FOOD_SIZE
+      )
     )

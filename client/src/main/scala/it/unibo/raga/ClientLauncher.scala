@@ -29,4 +29,5 @@ def startUp(port: Int, name: String): Unit =
   val config = ConfigFactory
     .parseString(dynamicConfigString)
     .withFallback(ConfigFactory.load())
+
   ActorSystem[ClientEvent | LocalClientEvent](ClientActor(name), ACTOR_SYSTEM_NAME, config)

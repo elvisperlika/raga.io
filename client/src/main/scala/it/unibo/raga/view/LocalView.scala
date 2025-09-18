@@ -12,6 +12,8 @@ class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[Loca
   title = s"Raga.io - Local View ($playerId)"
   preferredSize = new Dimension(400, 400)
 
+  var direction = (0.0, 0.0) // (dx, dy)
+
   private var lastUpdateTime = System.currentTimeMillis()
   private val updateInterval = 100 // milliseconds of input lag
 
@@ -35,7 +37,8 @@ class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[Loca
         playerOpt.foreach: player =>
           val dx = (mousePos.x - size.width / 2) * 0.01
           val dy = (mousePos.y - size.height / 2) * 0.01
-          actorRef ! LocalClientEvent.MovePlayer(dx, dy)
+          // actorRef ! LocalClientEvent.MovePlayer(dx, dy)
+          direction = (dx, dy)
         lastUpdateTime = now
         repaint()
       }

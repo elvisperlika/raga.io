@@ -74,17 +74,13 @@ object ChildActor:
   def mergeWorlds(oldWorld: World, newWorld: World, playerId: ID): World =
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)
     val requestingPlayer = newWorld.players.filter(_.id == playerId)
-    val extraFoods = generateExtraFoods(newWorld.foods.size)
+    val extraFoods = generateFoods(INIT_FOOD_NUMBER) diff newWorld.foods
     World(
       width = DEFAULT_WORLD_WIDTH,
       height = DEFAULT_WORLD_HEIGHT,
       players = otherPlayers ++ requestingPlayer,
       foods = newWorld.foods ++ extraFoods
     )
-
-  def generateExtraFoods(currentFoodCount: Int): Seq[Food] =
-    val foodsToGenerate = INIT_FOOD_NUMBER - currentFoodCount
-    generateFoods(foodsToGenerate)
 
   /** Generates n food items at random positions within the world bounds.
     *

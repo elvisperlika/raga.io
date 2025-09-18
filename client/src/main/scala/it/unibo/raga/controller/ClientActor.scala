@@ -23,7 +23,7 @@ import it.unibo.protocol.RequestRemoteWorldUpdate
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
 import it.unibo.protocol.World
-import it.unibo.raga.controller.CommunicationUtility.*
+import it.unibo.raga.controller.WorldConverter.*
 import it.unibo.raga.model.ImmutableGameStateManager
 import it.unibo.raga.model.LocalPlayer
 import it.unibo.raga.view.LocalView
@@ -45,8 +45,6 @@ object ClientActor:
     case JoinFriendsRoom
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
-    case MovePlayer(dx: Double, dy: Double)
-    case RequestWorldUpdate
 
   var manager: Option[ActorRef[ChildEvent]] = None
 
@@ -94,6 +92,7 @@ object ClientActor:
           val gameView = new LocalView(model.world, player.id, ctx.self)
           gameView.visible = true
           view.close()
+          ctx.self ! LocalClientEvent.Tick
           run(model, gameView, localPlayer, managerRef)
 
         case _ =>
@@ -129,31 +128,29 @@ object ClientActor:
       model: ImmutableGameStateManager,
       gameView: LocalView,
       player: LocalPlayer,
-      managerRef: ActorRef[ChildEvent]
-  ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
-    Behaviors.withTimers { timers =>
-      timers.startTimerAtFixedRate(LocalClientEvent.Tick, 100.milliseconds)
-
-      Behaviors.receiveMessage {
-        case LocalClientEvent.Tick =>
+      managerRef: ActorRef[ChildEvent],
+      isSynced: Boolean = true
+  ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.withTimers: timer =>
+    timer.startTimerAtFixedRate(LocalClientEvent.Tick, 100.milliseconds)
+    Behaviors.receive: (ctx, msg) =>
+      msg match
+        case LocalClientEvent.Tick if isSynced =>
+          ctx.log.info("🏀 TICK")
           val (dx, dy) = gameView.direction
-          ctx.log.info(s"🏀 Move player $player with delta ($dx, $dy)")
           val newModel = model.movePlayerDirection(player.id, dx, dy).tick()
-          gameView.updateWorld(newModel.world)
-          gameView.repaint()
           val remoteWorld = createRemoteWorld(newModel.world)
-          ctx.log.info(s"🏀 REQUESTING world update for player ${player.id}")
+          ctx.log.info(s"🏀 Requesting world update for player ${player.id}")
           managerRef ! RequestRemoteWorldUpdate(remoteWorld, (player.id, ctx.self))
-          run(newModel, gameView, player, managerRef)
+          run(newModel, gameView, player, managerRef, isSynced = false)
 
         case ReceivedRemoteWorld(world) =>
           ctx.log.info(s"🏀 World received")
           val localWorld = createLocalWorld(world)
           val newModel = new ImmutableGameStateManager(localWorld)
-          run(newModel, gameView, player, managerRef)
+          gameView.updateWorld(newModel.world)
+          gameView.repaint()
+          run(newModel, gameView, player, managerRef, isSynced = true)
 
         case _ =>
           ctx.log.info(s"🏀 Message not recognized...")
-          run(model, gameView, player, managerRef)
-      }
-    }
+          Behaviors.same // Use Behaviors.same if the model isn't changed and you want to continue

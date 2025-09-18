@@ -21,8 +21,6 @@ import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.World
 
-import scala.concurrent.duration.DurationInt
-
 object ChildActor:
 
   case class SendRemoteWorldUpdate() extends ChildEvent
@@ -42,34 +40,31 @@ object ChildActor:
     )
     work(world = World(DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT, Seq.empty, foods), players = Map.empty)
 
-  def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] =
-    Behaviors.withTimers: timer =>
-      timer.startTimerAtFixedRate(SendRemoteWorldUpdate(), 120.milliseconds)
+  def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
+    (ctx, msg) =>
+      msg match
+        case RequestWorld(nickName, replyTo, playerRef) =>
+          ctx.log.info(s"🤖 World requested by ${replyTo.path} with nickname $nickName")
+          // TODO: find empty space in the world to spawn the player
+          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
+          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+          val newWorld = world.copy(players = world.players :+ newPlayer)
+          replyTo ! RemoteWorld(newWorld, newPlayer)
+          work(newWorld, players + (nickName -> playerRef))
 
-      Behaviors.receive: (ctx, msg) =>
-        msg match
-          case RequestWorld(nickName, replyTo, playerRef) =>
-            ctx.log.info(s"🤖 World requested by ${replyTo.path} with nickname $nickName")
-            // TODO: find empty space in the world to spawn the player
-            val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
-            val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-            val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-            val newWorld = world.copy(players = world.players :+ newPlayer)
-            replyTo ! RemoteWorld(newWorld, newPlayer)
-            work(newWorld, players + (nickName -> playerRef))
+        case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
+          ctx.log.info(s"🤖 World update received for player $playerId")
+          val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
 
-          case RequestRemoteWorldUpdate(updatedWorld, (playerId, _)) =>
-            ctx.log.info(s"🤖 World update received for player $playerId")
-            val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
-            ctx.self ! SendRemoteWorldUpdate()
-            work(mergedWorld, players)
-
-          case SendRemoteWorldUpdate() =>
+          ctx.spawnAnonymous(Behaviors.setup[Nothing] { anonymousCtx =>
             if players.nonEmpty then
-              ctx.log.info(s"🤖 Sending world update to players")
+              anonymousCtx.log.info(s"🤖🤖🤖 Sending world update to players")
               players.foreach: (_, ref) =>
-                ref ! ReceivedRemoteWorld(world)
-            Behaviors.same
+                ref ! ReceivedRemoteWorld(mergedWorld)
+            Behaviors.stopped
+          })
+          work(mergedWorld, players)
 
   def mergeWorlds(oldWorld: World, newWorld: World, playerId: ID): World =
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)

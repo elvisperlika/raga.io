@@ -7,7 +7,7 @@ import it.unibo.raga.model.LocalFood
 import it.unibo.raga.model.LocalPlayer
 import it.unibo.raga.model.LocalWorld
 
-object CommunicationUtility:
+object WorldConverter:
 
   /** Convert a remote world to a local world.
     *

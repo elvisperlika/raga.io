@@ -21,18 +21,27 @@ import it.unibo.protocol.RequestRemoteWorldUpdate
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.World
+import it.unibo.protocol.SetUp
 
 object ChildActor:
-
-  case class SendRemoteWorldUpdate() extends ChildEvent
 
   def apply(): Behavior[ChildEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🤖 Child node Up")
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CHILD_SERVICE_KEY, ctx.self)
-
-    val foods = generateFoods(INIT_FOOD_NUMBER)
-    work(world = World(DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT, Seq.empty, foods), players = Map.empty)
+    Behaviors.receiveMessage {
+      case SetUp(worldId) =>
+        work(
+          world = World(
+            id = worldId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
+            foods = generateFoods(INIT_FOOD_NUMBER)
+          ),
+          players = Map.empty
+        )
+      case _ =>
+        ctx.log.warn(s"🤖 Received unexpected message in setup state")
+        Behaviors.same
+    }
 
   def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
     (ctx, msg) =>
@@ -74,8 +83,9 @@ object ChildActor:
   def mergeWorlds(oldWorld: World, newWorld: World, playerId: ID): World =
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)
     val requestingPlayer = newWorld.players.filter(_.id == playerId)
-    val extraFoods = generateFoods(INIT_FOOD_NUMBER) diff newWorld.foods
+    val extraFoods = generateFoods(INIT_FOOD_NUMBER).filterNot(food => newWorld.foods.exists(_.id == food.id))
     World(
+      id = oldWorld.id,
       width = DEFAULT_WORLD_WIDTH,
       height = DEFAULT_WORLD_HEIGHT,
       players = otherPlayers ++ requestingPlayer,

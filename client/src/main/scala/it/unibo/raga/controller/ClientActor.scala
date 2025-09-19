@@ -18,7 +18,6 @@ import it.unibo.protocol.GamaManagerAddress
 import it.unibo.protocol.JoinNetwork
 import it.unibo.protocol.Player
 import it.unibo.protocol.ReceivedRemoteWorld
-
 import it.unibo.protocol.RemoteWorld
 import it.unibo.protocol.RequestRemoteWorldUpdate
 import it.unibo.protocol.RequestWorld
@@ -132,7 +131,7 @@ object ClientActor:
       managerRef: ActorRef[ChildEvent],
       isSynced: Boolean = true
   ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.withTimers: timer =>
-    timer.startTimerAtFixedRate(LocalClientEvent.Tick, 100.millis)
+    timer.startTimerAtFixedRate(LocalClientEvent.Tick, 50.millis)
     Behaviors.receive: (ctx, msg) =>
       msg match
         case LocalClientEvent.Tick if isSynced =>

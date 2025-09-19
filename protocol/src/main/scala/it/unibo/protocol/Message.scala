@@ -28,6 +28,7 @@ case class JoinNetwork(event: MemberEvent) extends ClientEvent
 case class UpdateView() extends ClientEvent
 case class GamaManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
+case class ServiceNotAvailable() extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 

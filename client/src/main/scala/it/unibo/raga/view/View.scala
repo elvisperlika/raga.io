@@ -35,6 +35,9 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
 
   val joinFriendsRoomButton = makeButton("Join friend's room")
 
+  val alertLabel = makeLabel("")
+  alertLabel.foreground = Color.DARK_GRAY
+
   def makeLabel(text: String): Label =
     val label = new Label(text)
     label.font = label.font.deriveFont(java.awt.Font.BOLD)
@@ -79,6 +82,9 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
     contents += Swing.VStrut(smallVSpaceSize)
     contents += Swing.VStrut(smallVSpaceSize)
     contents += networkStatusLabel
+    contents += Swing.VStrut(smallVSpaceSize)
+    contents += alertLabel
+    contents += Swing.VStrut(bigVSpaceSize)
 
     border = Swing.EmptyBorder(30, 30, 30, 30)
     // Center alignment for all components
@@ -104,3 +110,19 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
   }
 
   def getNickname(): String = nicknameTextField.text.trim
+
+  def showAlert(message: String): Unit =
+    alertLabel.text = message
+
+  def clearAlert(): Unit =
+    alertLabel.text = ""
+
+  def activeButtons(): Unit =
+    joinRandomRoomButton.enabled = true
+    createAndJoinRoomButton.enabled = true
+    joinFriendsRoomButton.enabled = true
+
+  def disableButtons(): Unit =
+    joinRandomRoomButton.enabled = false
+    createAndJoinRoomButton.enabled = false
+    joinFriendsRoomButton.enabled = false

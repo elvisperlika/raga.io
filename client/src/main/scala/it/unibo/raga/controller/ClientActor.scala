@@ -22,6 +22,7 @@ import it.unibo.protocol.RemoteWorld
 import it.unibo.protocol.RequestRemoteWorldUpdate
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
+import it.unibo.protocol.ServiceNotAvailable
 import it.unibo.protocol.World
 import it.unibo.raga.controller.WorldConverter.*
 import it.unibo.raga.model.ImmutableGameStateManager
@@ -52,6 +53,7 @@ object ClientActor:
     ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self, name)
     view.visible = true
+    view.disableButtons()
 
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
@@ -74,13 +76,18 @@ object ClientActor:
           val nickName = view.getNickname()
           manager match
             case Some(ref) => requestWorld(nickName, ctx, ref)
-            case _ =>
-              ctx.log.info(s"🏀 Service not available now, please wait.")
-              Behaviors.same
+            case _ => Behaviors.same
 
         case GamaManagerAddress(managerRef) =>
           ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
           manager = Some(managerRef)
+          view.activeButtons()
+          view.showAlert("Enjoy the game!")
+          Behaviors.same
+
+        case ServiceNotAvailable() =>
+          view.disableButtons()
+          view.showAlert("No rooms available. Please wait...")
           Behaviors.same
 
         case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>

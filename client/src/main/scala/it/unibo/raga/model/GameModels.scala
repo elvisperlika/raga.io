@@ -13,31 +13,32 @@ sealed trait Entity:
     val dy = y - other.y
     math.hypot(dx, dy)
 
-case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity:
+case class LocalPlayer(id: String, x: Double, y: Double, mass: Double) extends Entity:
 
-  def grow(entity: Entity): Player =
+  def grow(entity: Entity): LocalPlayer =
     copy(mass = mass + entity.mass)
 
-case class Food(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
+case class LocalFood(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
 
-case class World(
+case class LocalWorld(
+    id: String = "<unknown>",
     width: Int,
     height: Int,
-    players: Seq[Player],
-    foods: Seq[Food]
+    players: Seq[LocalPlayer],
+    foods: Seq[LocalFood]
 ):
 
-  def playersExcludingSelf(player: Player): Seq[Player] =
+  def playersExcludingSelf(player: LocalPlayer): Seq[LocalPlayer] =
     players.filterNot(_.id == player.id)
 
-  def playerById(id: String): Option[Player] =
+  def playerById(id: String): Option[LocalPlayer] =
     players.find(_.id == id)
 
-  def updatePlayer(player: Player): World =
+  def updatePlayer(player: LocalPlayer): LocalWorld =
     copy(players = players.map(p => if (p.id == player.id) player else p))
 
-  def removePlayers(ids: Seq[Player]): World =
+  def removePlayers(ids: Seq[LocalPlayer]): LocalWorld =
     copy(players = players.filterNot(p => ids.map(_.id).contains(p.id)))
 
-  def removeFoods(ids: Seq[Food]): World =
+  def removeFoods(ids: Seq[LocalFood]): LocalWorld =
     copy(foods = foods.filterNot(f => ids.contains(f)))

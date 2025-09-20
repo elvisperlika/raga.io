@@ -9,9 +9,9 @@ object EatingManager:
     e1.distanceTo(e2) < (e1.radius + e2.radius)
 
   // Determines if a player can eat a food
-  def canEatFood(player: Player, food: Food): Boolean =
+  def canEatFood(player: LocalPlayer, food: LocalFood): Boolean =
     collides(player, food) && player.mass > food.mass
 
   // Determines if a player can eat another player
-  def canEatPlayer(player: Player, other: Player): Boolean =
+  def canEatPlayer(player: LocalPlayer, other: LocalPlayer): Boolean =
     collides(player, other) && player.mass > other.mass * MASS_MARGIN

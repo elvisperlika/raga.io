@@ -14,18 +14,10 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
   title = "Raga.io"
   preferredSize = new Dimension(WIDTH, HEIGHT)
 
-  enum NetworkStatus(val text: String):
-
-    case Online extends NetworkStatus("Online")
-    case Offline extends NetworkStatus("Offline")
-
   import scala.swing._
   import scala.swing.BorderPanel.Position._
 
-  val networkStatusLabel = makeLabel("")
-  showOffline()
-
-  val nicknameTextField = makeTextField("Bob")
+  val nicknameTextField = makeTextField("")
 
   val joinRandomRoomButton = makeButton("Join random battle")
 
@@ -34,6 +26,9 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
   val roomCodeTextField = makeTextField("1")
 
   val joinFriendsRoomButton = makeButton("Join friend's room")
+
+  val alertLabel = makeLabel("")
+  alertLabel.foreground = Color.DARK_GRAY
 
   def makeLabel(text: String): Label =
     val label = new Label(text)
@@ -78,7 +73,8 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
     contents += joinFriendsRoomButton
     contents += Swing.VStrut(smallVSpaceSize)
     contents += Swing.VStrut(smallVSpaceSize)
-    contents += networkStatusLabel
+    contents += alertLabel
+    contents += Swing.VStrut(bigVSpaceSize)
 
     border = Swing.EmptyBorder(30, 30, 30, 30)
     // Center alignment for all components
@@ -87,14 +83,6 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
   contents = new BorderPanel:
     layout(panel) = Center
 
-  def showOnline(): Unit =
-    networkStatusLabel.text = NetworkStatus.Online.text
-    networkStatusLabel.foreground = Color.GREEN
-
-  def showOffline(): Unit =
-    networkStatusLabel.text = NetworkStatus.Offline.text
-    networkStatusLabel.foreground = Color.RED
-
   listenTo(joinRandomRoomButton, createAndJoinRoomButton, joinFriendsRoomButton)
   reactions += { case event.ButtonClicked(btn) =>
     btn match
@@ -102,3 +90,11 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
       case `createAndJoinRoomButton` => clientActor ! LocalClientEvent.CreateAndJoinRoom
       case `joinFriendsRoomButton` => clientActor ! LocalClientEvent.JoinFriendsRoom
   }
+
+  def getNickname(): String = nicknameTextField.text.trim
+
+  def showAlert(message: String): Unit =
+    alertLabel.text = message
+
+  def clearAlert(): Unit =
+    alertLabel.text = ""

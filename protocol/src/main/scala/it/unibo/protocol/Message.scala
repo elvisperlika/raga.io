@@ -18,6 +18,8 @@ case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], player
     extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
 case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
+case class SetUp(worldId: ID) extends ChildEvent
+case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
@@ -27,6 +29,7 @@ case class JoinNetwork(event: MemberEvent) extends ClientEvent
 case class UpdateView() extends ClientEvent
 case class GamaManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
+case class ServiceNotAvailable() extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
@@ -49,11 +52,12 @@ object ServiceKeys:
 
 private trait Entity
 
-case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity
+case class Player(id: ID, x: Double, y: Double, mass: Double) extends Entity
 
-case class Food(id: String, x: Double, y: Double, mass: Double) extends Entity
+case class Food(id: ID, x: Double, y: Double, mass: Double) extends Entity
 
 case class World(
+    id: ID,
     width: Int,
     height: Int,
     players: Seq[Player],

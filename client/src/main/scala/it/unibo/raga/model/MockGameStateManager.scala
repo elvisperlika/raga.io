@@ -6,9 +6,18 @@ trait GameStateManager:
 
   def movePlayerDirection(id: String, dx: Double, dy: Double): Unit
 
+/** Immutable version of GameStateManager for functional programming style.
+  *
+  * @param world
+  *   Current state of the game world
+  * @param speed
+  *   Movement speed of the player
+  * @param playerDirection
+  *   Current direction of the player
+  */
 case class ImmutableGameStateManager(
     world: LocalWorld,
-    speed: Double = 10.0,
+    speed: Double = 5.0,
     private var playerDirection: (String, (Double, Double)) = ("", (0.0, 0.0))
 ):
 

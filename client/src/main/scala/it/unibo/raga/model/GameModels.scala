@@ -21,6 +21,7 @@ case class LocalPlayer(id: String, x: Double, y: Double, mass: Double) extends E
 case class LocalFood(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
 
 case class LocalWorld(
+    id: String = "<unknown>",
     width: Int,
     height: Int,
     players: Seq[LocalPlayer],

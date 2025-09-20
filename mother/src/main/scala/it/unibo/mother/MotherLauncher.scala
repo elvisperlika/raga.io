@@ -10,12 +10,10 @@ import it.unibo.protocol.MotherEvent
 object MotherLauncher:
 
   def main(args: Array[String]): Unit =
-    var port = MOTHER_PORT.toString
-    if args.size == 1 then port = args(0)
     val dynamicConfigString =
       s"""
         akka.remote.artery.canonical.hostname = "$LOCALHOST"
-        akka.remote.artery.canonical.port = "$port"
+        akka.remote.artery.canonical.port = "$MOTHER_PORT"
       """
     val config = ConfigFactory
       .parseString(dynamicConfigString)

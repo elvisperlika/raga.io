@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
+import it.unibo.protocol.ChildClientLeft
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ChildServerLeft
 import it.unibo.protocol.ChildServerUp
@@ -11,12 +12,21 @@ import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.ClientLeft
 import it.unibo.protocol.ClientUp
 import it.unibo.protocol.GamaManagerAddress
+import it.unibo.protocol.ID
 import it.unibo.protocol.MotherEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
+import it.unibo.protocol.ServiceNotAvailable
+import it.unibo.protocol.SetUp
+
+private case class ChildState(
+    ref: ActorRef[ChildEvent],
+    clients: List[ActorRef[ClientEvent]] = List.empty,
+    worldId: ID
+)
 
 private case class MotherState(
-    children: List[ActorRef[ChildEvent]] = List.empty,
-    clients: List[ActorRef[ClientEvent]] = List.empty
+    children: List[ChildState] = List.empty,
+    pendingClients: List[ActorRef[ClientEvent]] = List.empty
 )
 
 object MotherActor:
@@ -27,30 +37,81 @@ object MotherActor:
     ctx.spawn(MembersManager(ctx.self), "MembersManager")
     behavior(state = MotherState())
 
-  def behavior(state: MotherState): Behavior[MotherEvent] =
-    Behaviors.receive: (ctx, msg) =>
-      msg match
-        case ClientUp(client) =>
-          ctx.log.info(s"😍 Client Up: ${client.path}")
+  def behavior(state: MotherState): Behavior[MotherEvent] = Behaviors.receive: (ctx, msg) =>
+    msg match
+      case ClientUp(client) =>
+        ctx.log.info(s"😍 Client Up: ${client.path}")
+        val freeChild = findFreeChild(state)
+        freeChild match
+          case None =>
+            ctx.log.info("😍 No child servers available")
+            client ! ServiceNotAvailable()
+            behavior(state.copy(pendingClients = client :: state.pendingClients))
+          case Some(child) =>
+            ctx.log.info(s"😍 Assigning child server ${child.ref.path} to client ${client.path}")
+            client ! GamaManagerAddress(child.ref)
+            val updatedChildren = state.children.map { child =>
+              if freeChild.contains(child) then child.copy(clients = client :: child.clients)
+              else child
+            }
+            behavior(state.copy(children = updatedChildren))
 
-          // TODO: find the child with lowest work balance and send to client
-          val freeChild = state.children.lastOption
-          freeChild match
-            case None => ctx.log.info("😍 No child servers available")
-            case Some(c) =>
-              ctx.log.info(s"😍 Assigning child server ${c.path} to client ${client.path}")
-              client ! GamaManagerAddress(c)
+      case ChildServerUp(child) =>
+        ctx.log.info(s"😍 Child Up: ${child.path}")
+        val newID = generateWorldID(state.children.map(_.worldId))
+        child ! SetUp(newID)
+        state.pendingClients.foreach { client =>
+          ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
+          client ! GamaManagerAddress(child)
+        }
+        behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children))
 
-          behavior(state.copy(clients = client :: state.clients))
+      case ClientLeft(client) =>
+        ctx.log.info(s"😍 Client Left: ${client.path}")
 
-        case ChildServerUp(child) =>
-          ctx.log.info(s"😍 Child Up: ${child.path}")
-          behavior(state.copy(children = child :: state.children))
+        val updatedChildren = state.children.map { child =>
+          child.copy(clients = child.clients.filterNot(_ == client))
+        }
 
-        case ClientLeft(client) =>
-          ctx.log.info(s"😍 Client Left: ${client.path}")
-          behavior(state.copy(clients = state.clients.filterNot(_ == client)))
+        state.children.find(_.clients.contains(client)) match
+          case Some(child) =>
+            ctx.log.info(s"😍 Notified child server ${child.ref.path} about client ${client.path} disconnection")
+            child.ref ! ChildClientLeft(client)
+          case _ =>
 
-        case ChildServerLeft(child) =>
-          ctx.log.info(s"😍 Child Left: ${child.path}")
-          behavior(state.copy(children = state.children.filterNot(_ == child)))
+        var newPendingClients = state.pendingClients
+        if state.pendingClients.contains(client) then newPendingClients = state.pendingClients.filterNot(_ == client)
+
+        behavior(state.copy(children = updatedChildren, pendingClients = newPendingClients))
+
+      case ChildServerLeft(child) =>
+        ctx.log.info(s"😍 Child Left: ${child.path}")
+        behavior(state.copy(children = state.children.filterNot(_.ref == child)))
+
+  /** Generate a unique world ID not present in the given list of IDs
+    *
+    * @param ids
+    *   IDs already in use
+    * @return
+    *   A free unique ID
+    */
+  private def generateWorldID(ids: Seq[ID]): ID =
+    Iterator.continually(createID).find(id => !ids.contains(id)).get
+
+  /** Creates a random ID consisting of 3 uppercase letters.
+    *
+    * @return
+    *   A random ID
+    */
+  private def createID: ID =
+    scala.util.Random.alphanumeric.filter(_.isLetter).take(3).mkString.toUpperCase
+
+  /** Finds the child server with the least number of connected clients.
+    *
+    * @param state
+    *   Current state of the mother actor
+    * @return
+    *   An option containing the least loaded child server, or None if no child servers are available
+    */
+  private def findFreeChild(state: MotherState): Option[ChildState] =
+    state.children.sortBy(_.clients.size).headOption

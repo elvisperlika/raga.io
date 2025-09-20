@@ -19,7 +19,7 @@ object WorldConverter:
   def createLocalWorld(remoteWorld: World): LocalWorld =
     val localPlayers = remoteWorld.players.map(p => LocalPlayer(p.id, p.x, p.y, p.mass))
     val localFoods = remoteWorld.foods.map(f => LocalFood(f.id, f.x, f.y, f.mass))
-    LocalWorld(remoteWorld.width, remoteWorld.height, localPlayers, localFoods)
+    LocalWorld(remoteWorld.id, remoteWorld.width, remoteWorld.height, localPlayers, localFoods)
 
   /** Convert a local world to a remote world.
     *
@@ -31,4 +31,4 @@ object WorldConverter:
   def createRemoteWorld(localWorld: LocalWorld): World =
     val remotePlayers = localWorld.players.map(p => Player(p.id, p.x, p.y, p.mass))
     val remoteFoods = localWorld.foods.map(f => Food(f.id, f.x, f.y, f.mass))
-    World(localWorld.width, localWorld.height, remotePlayers, remoteFoods)
+    World(localWorld.id, localWorld.width, localWorld.height, remotePlayers, remoteFoods)

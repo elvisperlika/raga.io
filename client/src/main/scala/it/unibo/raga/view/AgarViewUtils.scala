@@ -1,23 +1,26 @@
 package it.unibo.raga.view
 
+import it.unibo.raga.model.LocalWorld
+
 import java.awt.Color
 import java.awt.Graphics2D
-import it.unibo.raga.model.LocalWorld
 
 object AgarViewUtils:
 
   private val playerBorderColor = Color.black
+  private val worldNameColor = Color.DARK_GRAY
   private val playerLabelOffsetX = 10
   private val playerLabelOffsetY = 0
   private val playerInnerOffset = 2
   private val playerInnerBorder = 4
+  private val worldNameOffsetX = 5
+  private val worldNameOffsetY = 15
   private val playerPalette: Array[Color] =
     Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray)
 
-  private def playerColor(id: String): Color = id match
-    case pid =>
-      val idx = pid.drop(1).toIntOption.getOrElse(0)
-      playerPalette(idx % playerPalette.length)
+  private def playerColor(id: String): Color =
+    val randIdx = Math.abs(id.hashCode)
+    playerPalette(randIdx % playerPalette.length)
 
   def drawWorld(
       g: Graphics2D,
@@ -30,6 +33,10 @@ object AgarViewUtils:
 
     def toScreenLabel(x: Double, y: Double): (Int, Int) =
       ((x - offsetX - playerLabelOffsetX).toInt, (y - offsetY - playerLabelOffsetY).toInt)
+
+    // Draw world name
+    g.setColor(worldNameColor)
+    g.drawString(s"World ID: ${world.id}", worldNameOffsetX, worldNameOffsetY)
 
     // Draw foods
     g.setColor(Color.green)

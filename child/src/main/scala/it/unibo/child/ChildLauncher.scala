@@ -4,20 +4,26 @@ import akka.actor.typed.ActorSystem
 import com.typesafe.config.ConfigFactory
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
-import it.unibo.protocol.ConfigParameters.CHILD_1_PORT
 import it.unibo.protocol.ConfigParameters.LOCALHOST
+import it.unibo.protocol.ConfigParameters.RANDOM_PORT
 
-object ChildLauncher:
+object ChildLauncher1:
 
   def main(args: Array[String]): Unit =
-    var port = CHILD_1_PORT.toString
-    if args.size == 1 then port = args(0)
-    val dynamicConfigString =
-      s"""
+    startUp()
+
+object ChildLauncher2:
+
+  def main(args: Array[String]): Unit =
+    startUp()
+
+private def startUp(): Unit =
+  val dynamicConfigString =
+    s"""
         akka.remote.artery.canonical.hostname = "$LOCALHOST"
-        akka.remote.artery.canonical.port = "$port"
+        akka.remote.artery.canonical.port = "$RANDOM_PORT"
       """
-    val config = ConfigFactory
-      .parseString(dynamicConfigString)
-      .withFallback(ConfigFactory.load())
-    ActorSystem[ChildEvent](ChildActor(), ACTOR_SYSTEM_NAME, config)
+  val config = ConfigFactory
+    .parseString(dynamicConfigString)
+    .withFallback(ConfigFactory.load())
+  ActorSystem[ChildEvent](ChildActor(), ACTOR_SYSTEM_NAME, config)

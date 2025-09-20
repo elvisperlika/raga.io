@@ -19,6 +19,7 @@ case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], player
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
 case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
 case class SetUp(worldId: ID) extends ChildEvent
+case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 

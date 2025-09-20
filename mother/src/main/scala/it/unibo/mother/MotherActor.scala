@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
+import it.unibo.protocol.ChildClientLeft
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ChildServerLeft
 import it.unibo.protocol.ChildServerUp
@@ -67,10 +68,21 @@ object MotherActor:
 
       case ClientLeft(client) =>
         ctx.log.info(s"😍 Client Left: ${client.path}")
+
         val updatedChildren = state.children.map { child =>
           child.copy(clients = child.clients.filterNot(_ == client))
         }
-        behavior(state.copy(children = updatedChildren))
+
+        state.children.find(_.clients.contains(client)) match
+          case Some(child) =>
+            ctx.log.info(s"😍 Notified child server ${child.ref.path} about client ${client.path} disconnection")
+            child.ref ! ChildClientLeft(client)
+          case _ =>
+
+        var newPendingClients = state.pendingClients
+        if state.pendingClients.contains(client) then newPendingClients = state.pendingClients.filterNot(_ == client)
+
+        behavior(state.copy(children = updatedChildren, pendingClients = newPendingClients))
 
       case ChildServerLeft(child) =>
         ctx.log.info(s"😍 Child Left: ${child.path}")

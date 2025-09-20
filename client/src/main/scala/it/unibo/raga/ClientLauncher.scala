@@ -5,9 +5,9 @@ import com.typesafe.config.ConfigFactory
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import it.unibo.protocol.ConfigParameters.LOCALHOST
+import it.unibo.protocol.ConfigParameters.RANDOM_PORT
 import it.unibo.raga.controller.ClientActor
 import it.unibo.raga.controller.ClientActor.LocalClientEvent
-import it.unibo.protocol.ConfigParameters.RANDOM_PORT
 
 object ClientLauncher1:
 

@@ -5,6 +5,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.Cluster
+import it.unibo.protocol.ChildClientLeft
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
@@ -20,8 +21,8 @@ import it.unibo.protocol.RemoteWorld
 import it.unibo.protocol.RequestRemoteWorldUpdate
 import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
-import it.unibo.protocol.World
 import it.unibo.protocol.SetUp
+import it.unibo.protocol.World
 
 object ChildActor:
 
@@ -36,38 +37,53 @@ object ChildActor:
             id = worldId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
             foods = generateFoods(INIT_FOOD_NUMBER)
           ),
-          players = Map.empty
+          managedPlayers = Map.empty
         )
       case _ =>
         ctx.log.warn(s"🤖 Received unexpected message in setup state")
         Behaviors.same
     }
 
-  def work(world: World, players: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
+  def work(world: World, managedPlayers: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
     (ctx, msg) =>
       msg match
         case RequestWorld(nickName, replyTo, playerRef) =>
-          ctx.log.info(s"🤖 World requested by ${replyTo.path} with nickname $nickName")
           // TODO: find empty space in the world to spawn the player
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
           val newWorld = world.copy(players = world.players :+ newPlayer)
           replyTo ! RemoteWorld(newWorld, newPlayer)
-          work(newWorld, players + (nickName -> playerRef))
+          work(newWorld, managedPlayers + (nickName -> playerRef))
 
         case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
-          ctx.log.info(s"🤖 World update received for player $playerId")
           val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
-
           ctx.spawnAnonymous(Behaviors.setup[Nothing] { anonymousCtx =>
-            if players.nonEmpty then
-              anonymousCtx.log.info(s"🤖🤖🤖 Sending world update to players")
-              players.foreach: (_, ref) =>
+            if managedPlayers.nonEmpty then
+              managedPlayers.foreach: (_, ref) =>
                 ref ! ReceivedRemoteWorld(mergedWorld)
             Behaviors.stopped
           })
-          work(mergedWorld, players)
+          work(mergedWorld, managedPlayers)
+
+        case ChildClientLeft(client) =>
+          ctx.log.info(s"🤖 CLIENT LEFT: ${client.path}")
+          val playerId = managedPlayers.find(p => p._2 == client)
+          playerId match
+            case Some(player) =>
+              ctx.log.info(s"🤖 PLAYER ID: ${player._1}")
+              val newManagedPlayers = managedPlayers.filterNot(_._1 == player._1)
+              val newWorldPlayers = world.players.filterNot(_.id == player._1)
+              ctx.log.info(s"WORLD BEFORE -> ${world.players}")
+              val newWorld = world.copy(players = newWorldPlayers)
+              ctx.log.info(s"WORLD AFTER -> ${newWorld.players}")
+              newManagedPlayers.foreach: (_, ref) =>
+                ref ! ReceivedRemoteWorld(newWorld)
+              work(newWorld, newManagedPlayers)
+
+            case None =>
+              ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
+              work(world, managedPlayers)
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *

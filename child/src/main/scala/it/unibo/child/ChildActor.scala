@@ -67,16 +67,12 @@ object ChildActor:
           work(mergedWorld, managedPlayers)
 
         case ChildClientLeft(client) =>
-          ctx.log.info(s"🤖 CLIENT LEFT: ${client.path}")
           val playerId = managedPlayers.find(p => p._2 == client)
           playerId match
             case Some(player) =>
-              ctx.log.info(s"🤖 PLAYER ID: ${player._1}")
               val newManagedPlayers = managedPlayers.filterNot(_._1 == player._1)
               val newWorldPlayers = world.players.filterNot(_.id == player._1)
-              ctx.log.info(s"WORLD BEFORE -> ${world.players}")
               val newWorld = world.copy(players = newWorldPlayers)
-              ctx.log.info(s"WORLD AFTER -> ${newWorld.players}")
               newManagedPlayers.foreach: (_, ref) =>
                 ref ! ReceivedRemoteWorld(newWorld)
               work(newWorld, newManagedPlayers)
@@ -99,7 +95,8 @@ object ChildActor:
   def mergeWorlds(oldWorld: World, newWorld: World, playerId: ID): World =
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)
     val requestingPlayer = newWorld.players.filter(_.id == playerId)
-    val extraFoods = generateFoods(INIT_FOOD_NUMBER).filterNot(food => newWorld.foods.exists(_.id == food.id))
+    val existingFoodIds = newWorld.foods.map(_.id).toSet
+    val extraFoods = generateFoods(INIT_FOOD_NUMBER).filterNot(food => existingFoodIds.contains(food.id))
     World(
       id = oldWorld.id,
       width = DEFAULT_WORLD_WIDTH,

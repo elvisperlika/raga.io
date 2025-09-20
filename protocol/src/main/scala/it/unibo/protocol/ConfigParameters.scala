@@ -6,6 +6,7 @@ object ConfigParameters:
   val ACTOR_SYSTEM_NAME = "GameCluster"
 
   val MOTHER_PORT = 19000
+  val RANDOM_PORT = 0
 
   val DEFAULT_PLAYER_SIZE = 200
   val DEFAULT_FOOD_SIZE = 100

@@ -18,10 +18,9 @@ object AgarViewUtils:
   private val playerPalette: Array[Color] =
     Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray)
 
-  private def playerColor(id: String): Color = id match
-    case pid =>
-      val idx = pid.drop(1).toIntOption.getOrElse(0)
-      playerPalette(idx % playerPalette.length)
+  private def playerColor(id: String): Color =
+    val randIdx = Math.abs(id.hashCode)
+    playerPalette(randIdx % playerPalette.length)
 
   def drawWorld(
       g: Graphics2D,

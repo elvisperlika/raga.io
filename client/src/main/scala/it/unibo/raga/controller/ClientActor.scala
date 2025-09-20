@@ -45,8 +45,6 @@ object ClientActor:
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
 
-  var manager: Option[ActorRef[ChildEvent]] = None
-
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self)
@@ -55,51 +53,60 @@ object ClientActor:
 
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
-
     val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(JoinNetwork.apply)
     cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
+    viewBehavior(view)
 
-    Behaviors.receive: (_, msg) =>
-      msg match
-        case JoinNetwork(MemberUp(member)) =>
-          view.showAlert("Connecting...")
-          Behaviors.same
+  /** Defines the behavior of the client actor in response to various events while the user is interacting with the
+    * homepage UI.
+    *
+    * @param view
+    *   View instance that user interacts with
+    * @param manager
+    *   Optional reference to the game manager actor
+    */
+  def viewBehavior(view: View, manager: Option[ActorRef[ChildEvent]] = None): Behavior[ClientEvent | LocalClientEvent] =
+    Behaviors.setup: ctx =>
+      Behaviors.receive: (_, msg) =>
+        msg match
+          case JoinNetwork(MemberUp(member)) =>
+            view.showAlert("Connecting...")
+            Behaviors.same
 
-        case LocalClientEvent.JoinRandomRoom =>
-          ctx.log.info(s"🏀 Join Button pressed...")
-          val nickName = view.getNickname()
-          manager match
-            case Some(ref) =>
-              requestWorld(nickName, ctx, ref)
-            case _ =>
-              view.showAlert("Service Not Available, please wait...")
-              Behaviors.same
+          case LocalClientEvent.JoinRandomRoom =>
+            ctx.log.info(s"🏀 Join Button pressed...")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                requestWorld(nickName, ctx, ref)
+              case _ =>
+                view.showAlert("Service Not Available, please wait...")
+                Behaviors.same
 
-        case GamaManagerAddress(managerRef) =>
-          ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
-          manager = Some(managerRef)
-          view.showAlert("Connected")
-          Behaviors.same
+          case GamaManagerAddress(managerRef) =>
+            ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
+            view.showAlert("Connected")
+            viewBehavior(view, Some(managerRef))
 
-        case ServiceNotAvailable() =>
-          view.showAlert("Service Not Available, please wait...")
-          Behaviors.same
+          case ServiceNotAvailable() =>
+            view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
 
-        case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>
-          ctx.log.info(s"🏀 First world received")
-          val localWorld = createLocalWorld(remoteWorld)
-          val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
-          val model = new ImmutableGameStateManager(localWorld)
+          case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>
+            ctx.log.info(s"🏀 First world received")
+            val localWorld = createLocalWorld(remoteWorld)
+            val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
+            val model = new ImmutableGameStateManager(localWorld)
 
-          val gameView = new LocalView(model.world, player.id, ctx.self)
-          gameView.visible = true
-          view.close()
-          ctx.self ! LocalClientEvent.Tick
-          run(model, gameView, localPlayer, managerRef)
+            val gameView = new LocalView(model.world, player.id, ctx.self)
+            gameView.visible = true
+            view.close()
+            ctx.self ! LocalClientEvent.Tick
+            run(model, gameView, localPlayer, managerRef)
 
-        case _ =>
-          ctx.log.info(s"🏀 Message not recognized: $msg")
-          Behaviors.same
+          case _ =>
+            ctx.log.info(s"🏀 Message not recognized: $msg")
+            Behaviors.same
 
   private def requestWorld(
       nickName: String,

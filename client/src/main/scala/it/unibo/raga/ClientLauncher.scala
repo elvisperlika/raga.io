@@ -7,6 +7,7 @@ import it.unibo.protocol.ConfigParameters.ACTOR_SYSTEM_NAME
 import it.unibo.protocol.ConfigParameters.LOCALHOST
 import it.unibo.raga.controller.ClientActor
 import it.unibo.raga.controller.ClientActor.LocalClientEvent
+import it.unibo.protocol.ConfigParameters.RANDOM_PORT
 
 object ClientLauncher1:
 
@@ -22,7 +23,7 @@ def startUp(): Unit =
   val dynamicConfigString =
     s"""
       akka.remote.artery.canonical.hostname = "$LOCALHOST"
-      akka.remote.artery.canonical.port = "0"
+      akka.remote.artery.canonical.port = "$RANDOM_PORT"
     """
   val config = ConfigFactory
     .parseString(dynamicConfigString)

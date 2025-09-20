@@ -32,8 +32,6 @@ import it.unibo.raga.view.View
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
-import scala.swing.*
-import scala.swing.Swing.onEDT
 import scala.util.Failure
 import scala.util.Success
 
@@ -49,11 +47,11 @@ object ClientActor:
 
   var manager: Option[ActorRef[ChildEvent]] = None
 
-  def apply(name: String): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
+  def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
-    var view = new View(ctx.self, name)
+    var view = new View(ctx.self)
     view.visible = true
-    view.disableButtons()
+    view.showAlert("Offline")
 
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
@@ -63,31 +61,28 @@ object ClientActor:
 
     Behaviors.receive: (_, msg) =>
       msg match
-        case LocalClientEvent.Tick =>
-          onEDT(view.repaint())
-          Behaviors.same
-
         case JoinNetwork(MemberUp(member)) =>
-          view.showOnline()
+          view.showAlert("Connecting...")
           Behaviors.same
 
         case LocalClientEvent.JoinRandomRoom =>
           ctx.log.info(s"🏀 Join Button pressed...")
           val nickName = view.getNickname()
           manager match
-            case Some(ref) => requestWorld(nickName, ctx, ref)
-            case _ => Behaviors.same
+            case Some(ref) =>
+              requestWorld(nickName, ctx, ref)
+            case _ =>
+              view.showAlert("Service Not Available, please wait...")
+              Behaviors.same
 
         case GamaManagerAddress(managerRef) =>
           ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
           manager = Some(managerRef)
-          view.activeButtons()
-          view.showAlert("Enjoy the game!")
+          view.showAlert("Connected")
           Behaviors.same
 
         case ServiceNotAvailable() =>
-          view.disableButtons()
-          view.showAlert("No rooms available. Please wait...")
+          view.showAlert("Service Not Available, please wait...")
           Behaviors.same
 
         case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>

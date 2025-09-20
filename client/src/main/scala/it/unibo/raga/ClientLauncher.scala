@@ -8,17 +8,17 @@ import it.unibo.protocol.ConfigParameters.LOCALHOST
 import it.unibo.raga.controller.ClientActor
 import it.unibo.raga.controller.ClientActor.LocalClientEvent
 
-object BobClientLauncher:
+object ClientLauncher1:
 
   def main(args: Array[String]): Unit =
-    startUp("Bob")
+    startUp()
 
-object AliceClientLauncher:
+object ClientLauncher2:
 
   def main(args: Array[String]): Unit =
-    startUp("Alice")
+    startUp()
 
-def startUp(name: String): Unit =
+def startUp(): Unit =
   val dynamicConfigString =
     s"""
       akka.remote.artery.canonical.hostname = "$LOCALHOST"
@@ -28,4 +28,4 @@ def startUp(name: String): Unit =
     .parseString(dynamicConfigString)
     .withFallback(ConfigFactory.load())
 
-  ActorSystem[ClientEvent | LocalClientEvent](ClientActor(name), ACTOR_SYSTEM_NAME, config)
+  ActorSystem[ClientEvent | LocalClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)

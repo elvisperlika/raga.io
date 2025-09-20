@@ -9,23 +9,15 @@ import java.awt.Color
 import java.awt.Dimension
 import scala.swing.MainFrame
 
-class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFrame:
+class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
 
   title = "Raga.io"
   preferredSize = new Dimension(WIDTH, HEIGHT)
 
-  enum NetworkStatus(val text: String):
-
-    case Online extends NetworkStatus("Online")
-    case Offline extends NetworkStatus("Offline")
-
   import scala.swing._
   import scala.swing.BorderPanel.Position._
 
-  val networkStatusLabel = makeLabel("")
-  showOffline()
-
-  val nicknameTextField = makeTextField(name)
+  val nicknameTextField = makeTextField("")
 
   val joinRandomRoomButton = makeButton("Join random battle")
 
@@ -81,8 +73,6 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
     contents += joinFriendsRoomButton
     contents += Swing.VStrut(smallVSpaceSize)
     contents += Swing.VStrut(smallVSpaceSize)
-    contents += networkStatusLabel
-    contents += Swing.VStrut(smallVSpaceSize)
     contents += alertLabel
     contents += Swing.VStrut(bigVSpaceSize)
 
@@ -92,14 +82,6 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
 
   contents = new BorderPanel:
     layout(panel) = Center
-
-  def showOnline(): Unit =
-    networkStatusLabel.text = NetworkStatus.Online.text
-    networkStatusLabel.foreground = Color.GREEN
-
-  def showOffline(): Unit =
-    networkStatusLabel.text = NetworkStatus.Offline.text
-    networkStatusLabel.foreground = Color.RED
 
   listenTo(joinRandomRoomButton, createAndJoinRoomButton, joinFriendsRoomButton)
   reactions += { case event.ButtonClicked(btn) =>
@@ -116,13 +98,3 @@ class View(clientActor: ActorRef[LocalClientEvent], name: String) extends MainFr
 
   def clearAlert(): Unit =
     alertLabel.text = ""
-
-  def activeButtons(): Unit =
-    joinRandomRoomButton.enabled = true
-    createAndJoinRoomButton.enabled = true
-    joinFriendsRoomButton.enabled = true
-
-  def disableButtons(): Unit =
-    joinRandomRoomButton.enabled = false
-    createAndJoinRoomButton.enabled = false
-    joinFriendsRoomButton.enabled = false

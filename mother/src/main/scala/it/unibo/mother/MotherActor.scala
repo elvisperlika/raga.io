@@ -95,10 +95,16 @@ object MotherActor:
     * @return
     *   A free unique ID
     */
-  def generateWorldID(ids: Seq[ID]): ID =
-    val id: ID = scala.util.Random.alphanumeric.filter(_.isLetter).take(3).mkString.toUpperCase
-    if ids.contains(id) then generateWorldID(ids)
-    else id
+  private def generateWorldID(ids: Seq[ID]): ID =
+    Iterator.continually(createID).find(id => !ids.contains(id)).get
+
+  /** Creates a random ID consisting of 3 uppercase letters.
+    *
+    * @return
+    *   A random ID
+    */
+  private def createID: ID =
+    scala.util.Random.alphanumeric.filter(_.isLetter).take(3).mkString.toUpperCase
 
   /** Finds the child server with the least number of connected clients.
     *
@@ -107,5 +113,5 @@ object MotherActor:
     * @return
     *   An option containing the least loaded child server, or None if no child servers are available
     */
-  def findFreeChild(state: MotherState): Option[ChildState] =
+  private def findFreeChild(state: MotherState): Option[ChildState] =
     state.children.sortBy(_.clients.size).headOption

@@ -1,10 +1,18 @@
-import sbt.Keys._
+import sbt.Keys.*
 import sbtassembly.AssemblyPlugin.autoImport.MergeStrategy
-import sbtassembly.AssemblyPlugin.autoImport._
+import sbtassembly.AssemblyPlugin.autoImport.*
 
-ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / version := "1.0.0-SNAPSHOT"
 ThisBuild / scalafmtOnCompile := true
 ThisBuild / scalaVersion := "3.3.6"
+ThisBuild / assemblyMergeStrategy := {
+  case PathList("META-INF", "versions", "9", "module-info.class") => MergeStrategy.discard
+  case PathList("module-info.class") => MergeStrategy.discard
+  case "rootdoc.txt" => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
 
 lazy val commonSettings = Seq(
   resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
@@ -31,21 +39,24 @@ lazy val protocol = (project in file("protocol"))
 
 lazy val motherServerModule = (project in file("mother"))
   .settings(
-    name := "mother-server"
+    name := "mother-server",
+    assembly / mainClass := Some("it.unibo.mother.MotherLauncher")
   )
   .settings(commonSettings)
   .dependsOn(protocol)
 
 lazy val childServerModule = (project in file("child"))
   .settings(
-    name := "child-server"
+    name := "child-server",
+    assembly / mainClass := Some("it.unibo.child.ChildLauncher1")
   )
   .settings(commonSettings)
   .dependsOn(protocol)
 
 lazy val clientModule = (project in file("client"))
   .settings(
-    name := "client"
+    name := "client",
+    assembly / mainClass := Some("it.unibo.raga.ClientLauncher1")
   )
   .settings(commonSettings)
   .dependsOn(protocol)
@@ -53,12 +64,3 @@ lazy val clientModule = (project in file("client"))
 // ---
 
 enablePlugins(AssemblyPlugin)
-
-assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", "versions", "9", "module-info.class") => MergeStrategy.discard
-  case PathList("module-info.class") => MergeStrategy.discard
-  case "rootdoc.txt" => MergeStrategy.discard
-  case x =>
-    val oldStrategy = (assembly / assemblyMergeStrategy).value
-    oldStrategy(x)
-}

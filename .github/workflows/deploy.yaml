@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - ci-setup
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up JDK 24
+        uses: actions/setup-java@v3
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+          cache: 'sbt'
+      - name: Setup sbt launcher
+        uses: sbt/setup-sbt@v1
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v3
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Setup sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Build JARs
+        run: sbt assembly
+
+      - name: Upload Client JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raga.io
+          path: client/target/scala-3.3.6/client-assembly-*-SNAPSHOT.jar
+
+      - name: Upload Mother Server JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotherServer
+          path: mother/target/scala-3.3.6/mother-server-assembly-*-SNAPSHOT.jar
+
+      - name: Upload Child Server JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChildServer
+          path: child/target/scala-3.3.6/child-server-assembly-*-SNAPSHOT.jar
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          generate_release_notes: true
+          files: |
+            client/target/scala-3.3.6/client-assembly-*-SNAPSHOT.jar
+            mother/target/scala-3.3.6/mother-server-assembly-*-SNAPSHOT.jar
+            child/target/scala-3.3.6/child-server-assembly-*-SNAPSHOT.jar

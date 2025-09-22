@@ -13,6 +13,7 @@ import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
 import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
+import it.unibo.protocol.EatenPlayer
 import it.unibo.protocol.Food
 import it.unibo.protocol.ID
 import it.unibo.protocol.Player
@@ -23,6 +24,7 @@ import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.SetUp
 import it.unibo.protocol.World
+import it.unibo.protocol.EndGame
 
 object ChildActor:
 
@@ -80,6 +82,16 @@ object ChildActor:
             case None =>
               ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
               work(world, managedPlayers)
+
+        case EatenPlayer(playerId) =>
+          val newWorldPlayers = world.players.filterNot(_.id == playerId)
+          val newWorld = world.copy(players = newWorldPlayers)
+          managedPlayers.foreach: (_, ref) =>
+            ref ! ReceivedRemoteWorld(newWorld)
+          managedPlayers.find(_._1 == playerId) match
+            case Some((_, ref)) => ref ! EndGame()
+            case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
+          work(newWorld, managedPlayers)
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *

@@ -20,6 +20,7 @@ case class RemoteWorld(world: World, player: Player) extends ChildEvent
 case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
 case class SetUp(worldId: ID) extends ChildEvent
 case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
+case class EatenPlayer(id: ID) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
@@ -30,6 +31,7 @@ case class UpdateView() extends ClientEvent
 case class GamaManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
 case class ServiceNotAvailable() extends ClientEvent
+case class EndGame() extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 

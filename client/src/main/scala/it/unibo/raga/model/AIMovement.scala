@@ -34,3 +34,18 @@ object AIMovement:
           val normalizedDy = dy / distance
           gameManager.movePlayerDirection(name, normalizedDx, normalizedDy)
       case _ => // Do nothing if AI or food doesn't exist
+
+  def getBestDirection(player: LocalPlayer, world: LocalWorld): (Double, Double) =
+    val aiOpt = world.playerById(player.id)
+    val foodOpt = nearestFood(player.id, world)
+    (aiOpt, foodOpt) match
+      case (Some(ai), Some(food)) =>
+        val dx = food.x - ai.x
+        val dy = food.y - ai.y
+        val distance = math.hypot(dx, dy)
+        if distance > 0 then
+          val normalizedDx = dx / distance
+          val normalizedDy = dy / distance
+          (normalizedDx, normalizedDy)
+        else (0.0, 0.0)
+      case _ => (0.0, 0.0)

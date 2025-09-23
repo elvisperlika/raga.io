@@ -5,8 +5,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.Cluster
-import it.unibo.protocol.ChildClientLeft
 import it.unibo.protocol.ChildEvent
+import it.unibo.protocol.ChildClientLeft
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
@@ -14,6 +14,7 @@ import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
 import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
 import it.unibo.protocol.EatenPlayer
+import it.unibo.protocol.EndGame
 import it.unibo.protocol.Food
 import it.unibo.protocol.ID
 import it.unibo.protocol.Player
@@ -24,7 +25,7 @@ import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.SetUp
 import it.unibo.protocol.World
-import it.unibo.protocol.EndGame
+import it.unibo.protocol.ChildClientLeft
 
 object ChildActor:
 

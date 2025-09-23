@@ -27,6 +27,7 @@ import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
 import it.unibo.protocol.ServiceNotAvailable
 import it.unibo.protocol.World
 import it.unibo.raga.controller.WorldConverter.*
+import it.unibo.raga.model.AIMovement
 import it.unibo.raga.model.ImmutableGameStateManager
 import it.unibo.raga.model.LocalPlayer
 import it.unibo.raga.view.EndGameView
@@ -78,7 +79,8 @@ object ClientActor:
 
           case LocalClientEvent.JoinRandomRoom =>
             ctx.log.info(s"🏀 Join Button pressed...")
-            val nickName = view.getNickname()
+            // val nickName = view.getNickname()
+            val nickName = "AI-" + scala.util.Random.alphanumeric.take(5).mkString
             manager match
               case Some(ref) =>
                 requestWorld(nickName, ctx, ref)
@@ -89,6 +91,7 @@ object ClientActor:
           case GamaManagerAddress(managerRef) =>
             ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
             view.showAlert("Connected")
+            ctx.self ! LocalClientEvent.JoinRandomRoom
             viewBehavior(view, Some(managerRef))
 
           case ServiceNotAvailable() =>
@@ -147,7 +150,7 @@ object ClientActor:
     Behaviors.receive: (ctx, msg) =>
       msg match
         case LocalClientEvent.Tick if isSynced =>
-          val (dx, dy) = gameView.direction
+          val (dx, dy) = AIMovement.getBestDirection(player, model.world)
           val newModel = model.movePlayerDirection(player.id, dx, dy).tick()
           val eatenPlayers = model.world.players.filterNot(p => newModel.world.players.exists(_.id == p.id))
           if eatenPlayers.nonEmpty then

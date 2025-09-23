@@ -9,6 +9,11 @@ import it.unibo.protocol.ConfigParameters.RANDOM_PORT
 import it.unibo.raga.controller.ClientActor
 import it.unibo.raga.controller.ClientActor.LocalClientEvent
 
+object Run10Clients:
+
+  def main(args: Array[String]): Unit =
+    (1 to 10) foreach (_ => ClientLauncher1.main(args))
+
 object ClientLauncher1:
 
   def main(args: Array[String]): Unit =

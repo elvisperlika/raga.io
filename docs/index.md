@@ -74,54 +74,53 @@ This project is a desktop application with a graphical user interface (GUI) pack
 
 ### Functional Requirements
 
-1. **User Login and Session Management**  
-   - Ability to join a random game session.  
-   - Ability to create a new game session.  
-   - Ability to join an existing session using a unique session ID.  
-
-2. **Real-time Multiplayer Interaction**  
-   - Support for multiple concurrent players in a session.  
-   - Real-time visibility and interaction between players.  
-   - Low-latency handling of movements and actions.  
-   - Mechanism for consuming smaller cells (players or food) to increase size.  
-
-3. **Core Game Mechanics**  
-   - Growth system based on consuming smaller cells.  
-   - Random spawning of food items within the map.  
-   - Collision detection and outcome resolution based on cell size.  
-   - Sessions conclude when a player is eliminated or chooses to exit.
-
-4. **User Interface**  
-   - Intuitive GUI for session management.
-     - Button to join a random session.
-     - Nickname input field.
-     - Button to create a new session and join it.
-     - Input field for session ID to join an existing session.
-     - Button to join the specified session.
-   - Visual representation of player cells, food items, and other players.
-     - Display of player names.
-     - Display session ID.
+1. Ability to join a random game session.
+2. Ability to create a new game session.
+3. Ability to join an existing session using a unique session ID.
+4. Support for multiple concurrent players in a session.
+    - *Acceptance criteria:* at least 5 concurrent players per session.
+5. Real-time visibility and interaction between players.
+    - *Acceptance criteria:* latency < 200ms.
+6. Low-latency handling of movements and actions.
+    - *Acceptance criteria:* maintain a frame rate of at least 30 FPS during typical gameplay.
+7. Mechanism for consuming smaller cells (players or food) to increase size.
+    - *Acceptance criteria:* players can consume smaller cells and visibly grow in size.
+8. Random spawning of food items within the map.
+9. Collision detection and outcome resolution based on cell size.
+10. Sessions conclude when a player is eliminated or chooses to exit.
+11. Intuitive GUI for session management.
+    - Button to join a random session.
+    - Nickname input field.
+    - Button to create a new session and join it.
+    - Input field for entering a session ID to join an existing session.
+    - Button to join the specified session.
+12. Visual representation of player cells, food items, and other players.
+    - Display player names.
+    - Display the session ID so players can share it with friends.
+13. Scalable server architecture to handle increasing player numbers.  
+14. A master server coordinating multiple game servers that manage individual game sessions.
+15. Dynamic allocation of players to game servers based on load and availability.
 
 ### Non-Functional Requirements
 
-1. **Performance**  
-   - The system must handle at least 100 concurrent players per session without significant lag (latency < 200ms).
+1. The server architecture should support scaling to accommodate increasing numbers of concurrent sessions and players.
+2. Backup and failover mechanisms to ensure session continuity in case of game server failure.
 
 ## Design
 
-This chapter explains the strategies used to meet the requirements identified in the analysis.
+<!-- This chapter explains the strategies used to meet the requirements identified in the analysis.
 Ideally, the design should be the same, regardless of the technological choices made during the implementation phase.
 
-> You can re-order the sections as you prefer, but all the sections must be present in the end
+> You can re-order the sections as you prefer, but all the sections must be present in the end -->
 
 ### Architecture
 
-- Which architectural style?
-  - why?
+<!-- - Which architectural style?
+  - why? -->
 
 ### Infrastructure
 
-- are there _infrastructural components_ that need to be introduced? _how many_?
+<!-- - are there _infrastructural components_ that need to be introduced? _how many_?
   - e.g. _clients_, _servers_, _load balancers_, _caches_, _databases_, _message brokers_, _queues_, _workers_, _proxies_, _firewalls_, _CDNs_, _etc._
 
 - how do components _distribute_ over the network? _where_?
@@ -131,11 +130,11 @@ Ideally, the design should be the same, regardless of the technological choices 
   - how to _name_ components?
   - e.g. DNS, _service discovery_, _load balancing_, _etc._
 
-> Component diagrams are welcome here
+> Component diagrams are welcome here -->
 
 ### Modelling
 
-- which __domain entities__ are there?
+<!-- - which __domain entities__ are there?
   - e.g. _users_, _products_, _orders_, _etc._
 
 - how do _domain entities_ __map to__ _infrastructural components_?
@@ -149,29 +148,29 @@ Ideally, the design should be the same, regardless of the technological choices 
   - e.g. _commands_, _events_, _queries_, _etc._
 
 - what information does the __state__ of the system comprehend
-  - e.g. _users' data_, _products' data_, _orders' data_, _etc._
+  - e.g. _users' data_, _products' data_, _orders' data_, _etc._ -->
 
-> Class diagram are welcome here
+<!-- > Class diagram are welcome here -->
 
 ### Interaction
 
-- how do components _communicate_? _when_? _what_?
+<!-- - how do components _communicate_? _when_? _what_?
 - _which_ __interaction patterns__ do they enact?
 
-> Sequence diagrams are welcome here
+> Sequence diagrams are welcome here -->
 
 ### Behaviour
 
-- how does _each_ component __behave__ individually (e.g. in _response_ to _events_ or messages)?
+<!-- - how does _each_ component __behave__ individually (e.g. in _response_ to _events_ or messages)?
   - some components may be _stateful_, others _stateless_
 
 - which components are in charge of updating the __state__ of the system? _when_? _how_?
 
-> State diagrams are welcome here
+> State diagrams are welcome here -->
 
 ### Data and Consistency Issues
 
-- Is there any data that needs to be stored?
+<!-- - Is there any data that needs to be stored?
   - _what_ data? _where_? _why_?
 
 - how should _persistent data_ be __stored__?
@@ -183,33 +182,33 @@ Ideally, the design should be the same, regardless of the technological choices 
   - concurrent read? concurrent write? why?
 
 - Is there any data that needs to be shared between components?
-  - _why_? _what_ data?
+  - _why_? _what_ data? -->
 
 ### Fault-Tolerance
 
-- Is there any form of data __replication__ / federation / sharing?
+<!-- - Is there any form of data __replication__ / federation / sharing?
   - _why_? _how_ does it work?
 
 - Is there any __heart-beating__, __timeout__, __retry mechanism__?
   - _why_? _among_ which components? _how_ does it work?
 
 - Is there any form of __error handling__?
-  - _what_ happens when a component fails? _why_? _how_?
+  - _what_ happens when a component fails? _why_? _how_? -->
 
 ### Availability
 
-- Is there any __caching__ mechanism?
+<!-- - Is there any __caching__ mechanism?
   - _where_? _why_?
 
 - Is there any form of __load balancing__?
   - _where_? _why_?
 
 - In case of __network partitioning__, how does the system behave?
-  - _why_? _how_?
+  - _why_? _how_? -->
 
 ### Security
 
-- Is there any form of __authentication__?
+<!-- - Is there any form of __authentication__?
   - _where_? _why_?
 
 - Is there any form of __authorization__?
@@ -218,14 +217,14 @@ Ideally, the design should be the same, regardless of the technological choices 
 
 - Are __cryptographic schemas__ being used?
   - e.g. token verification,
-  - e.g. data encryption, etc.
+  - e.g. data encryption, etc. -->
 
 ---
 <!-- Riparti da qui  -->
 
 ## Implementation
 
-- which __network protocols__ to use?
+<!-- - which __network protocols__ to use?
   - e.g. UDP, TCP, HTTP, WebSockets, gRPC, XMPP, AMQP, MQTT, etc.
 - how should _in-transit data_ be __represented__?
   - e.g. JSON, XML, YAML, Protocol Buffers, etc.
@@ -234,17 +233,17 @@ Ideally, the design should be the same, regardless of the technological choices 
 - how should components be _authenticated_?
   - e.g. OAuth, JWT, etc.
 - how should components be _authorized_?
-  - e.g. RBAC, ABAC, etc.
+  - e.g. RBAC, ABAC, etc. -->
 
 ### Technological details
 
-- any particular _framework_ / _technology_ being exploited goes here
+<!-- - any particular _framework_ / _technology_ being exploited goes here -->
 
 ## Validation
 
 ### Automatic Testing
 
-- how were individual components **_unit_-test**ed?
+<!-- - how were individual components **_unit_-test**ed?
 - how was communication, interaction, and/or integration among components tested?
 - how to ___end-to-end_-test__ the system?
   - e.g. production vs. test environment
@@ -257,17 +256,17 @@ Ideally, the design should be the same, regardless of the technological choices 
 
 > recall that _deployment_ __automation__ is commonly used to _test_ the system in _production-like_ environment
 ---
-> recall to test corner cases (crashes, errors, etc.)
+> recall to test corner cases (crashes, errors, etc.) -->
 
 ### Acceptance test
 
-- did you perform any _manual_ testing?
+<!-- - did you perform any _manual_ testing?
   - what did you test?
-  - why wasn't it automatic?
+  - why wasn't it automatic? -->
 
 ## Release
 
-- how where components organized into _inter-dependant modules_ or just a single monolith?
+<!-- - how where components organized into _inter-dependant modules_ or just a single monolith?
   - provide a _dependency graph_ if possible
 
 - were modules distributed as a _single archive_ or _multiple ones_?
@@ -276,24 +275,24 @@ Ideally, the design should be the same, regardless of the technological choices 
 - how were archive versioned?
 
 - were archive _released_ onto some archive repository (e.g. Maven, PyPI, npm, etc.)?
-  - how to _install_ them?
+  - how to _install_ them? -->
 
 ## Deployment
 
-- should one install your software from scratch, how to do it?
+<!-- - should one install your software from scratch, how to do it?
   - provide instructions
-  - provide expected outcomes
+  - provide expected outcomes -->
 
 ## User Guide
-
-- how to use your software?
+ 
+<!-- - how to use your software?
   - provide instructions
   - provide expected outcomes
-  - provide screenshots if possible
+  - provide screenshots if possible -->
 
 ## Self-evaluation
 
-- An individual section is required for each member of the group
+<!-- - An individual section is required for each member of the group
 - Each member must self-evaluate their work, listing the strengths and weaknesses of the product
 - Each member must describe their role within the group as objectively as possible.
-It should be noted that each student is only responsible for their own section
+It should be noted that each student is only responsible for their own section -->

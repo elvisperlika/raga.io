@@ -3,38 +3,59 @@
 - [Elvis Perlika](mailto:elvis.perlika@studio.unibo.it)
 - [Eleonora Falconi](mailto:eleonora.falconi2@studio.unibo.it)
 
-## AI Disclaimer (if needed)
+## AI Disclaimer
 
-"During the preparation of this work, the author(s) used [NAME TOOL /
-SERVICE] to [REASON].
-After using this tool/service, the author(s) reviewed and edited the
-content as needed and take(s) full responsibility for the content of the
-final report/artifact."
+During the preparation of this work, the authors used Chat-GPT and Gemini to 
+refine the report by improving sentence structure and correcting grammatical errors.
+After using these tools, the authors reviewed and edited the
+content as needed and takes full responsibility for the content of the
+final report/artifact.
 
 ## Abstract
 
-Brief description of the project, its goals, and its achievements.
+<!-- Brief description of the project, its goals, and its achievements. -->
+
+Agar.io is an online, massively multiplayer action game. Players take on the role of a small, circular cell inside a map that resembles a [Petri dish](https://arc.net/l/quote/ihqtspfk). The primary goal is to grow as large as possible by consuming smaller cells, both those controlled by other players and those that are scattered randomly throughout the game world as food. This simple premise leads to a dynamic and competitive environment where a player's size directly dictates their power and vulnerability. Players can join a randomly assigned game session, create a new session, or join an existing one using a unique session ID. The session ends only when the player is eaten or decides to quit.
+
+The goal of this project is to design and develop a clone of Agar.io with a robust client–server architecture, ensuring scalability, performance, and smooth multiplayer interaction.
+
+Achievements:
+
+- Developed a real-time client–server architecture supporting multiple concurrent players.
+- Implemented smooth synchronization and communication protocols to minimize lag.
+- Designed an efficient game loop for rendering, collision detection, and player interaction.
+- Created scalable server logic capable of handling large numbers of simultaneous connections.
+- Implemented core game mechanics: cell growth, collision handling, food spawning, and player elimination.
+- Delivered a competitive multiplayer experience close to the original Agar.io.
 
 ## Concept
 
-Here you should explain:
+<!-- Here you should explain:
 
 - The type of product developed with that project, for example (non-exhaustive):
   - Application (with GUI, be it mobile, web, or desktop)
   - Command-line application (CLI could be used by humans or scripts)
   - Library
-  - Web-service(s)
+  - Web-service(s) -->
+  
+This project is a desktop application with a graphical user interface (GUI) packaged as a Java Archive (JAR) file. It can be executed on any system with a Java Runtime Environment (JRE) installed.
 
-- Use case collection
+<!-- - Use case collection
   - _where_ are the users?
   - _when_ and _how frequently_ do they interact with the system?
   - _how_ do they _interact_ with the system? which _devices_ are they using?
   - does the system need to _store_ user's __data__? _which_? _where_?
-  - most likely, there will be _multiple_ __roles__
+  - most likely, there will be _multiple_ __roles__ -->
+
+- **Primary Users**: The game is designed for casual gamers who enjoy competitive multiplayer experiences. Players can be located anywhere worldwide, as it is built for online play.  
+- **Usage Patterns**: Sessions are typically short and played during leisure time, ranging from just a few minutes up to an hour.  
+- **Interaction Method**: Players interact through a **graphical user interface (GUI)** on desktop computers, using a mouse to control their in-game cell.  
+- **Data Handling**: No personal data is stored. The system only maintains temporary session data (e.g., player positions, scores), which is discarded once the session ends.  
+- **User Roles**: There is only one role: **Player**. All users share the same capabilities, with no role-based differences or special permissions.  
 
 ## Requirements
 
-- The requirements must explain __what__ (not how) the software being produced should do.
+<!-- - The requirements must explain __what__ (not how) the software being produced should do.
   - you should not focus on the particular problems, but exclusively on what you want the application to do.
 
 - Requirements must be clearly identified, and possibly numbered
@@ -49,7 +70,42 @@ Here you should explain:
 - If there are domain-specific terms, these should be explained in a glossary
 
 - Each requirement must have its own __acceptance criteria__
-  - these will be important for the validation phase
+  - these will be important for the validation phase -->
+
+### Functional Requirements
+
+1. **User Login and Session Management**  
+   - Ability to join a random game session.  
+   - Ability to create a new game session.  
+   - Ability to join an existing session using a unique session ID.  
+
+2. **Real-time Multiplayer Interaction**  
+   - Support for multiple concurrent players in a session.  
+   - Real-time visibility and interaction between players.  
+   - Low-latency handling of movements and actions.  
+   - Mechanism for consuming smaller cells (players or food) to increase size.  
+
+3. **Core Game Mechanics**  
+   - Growth system based on consuming smaller cells.  
+   - Random spawning of food items within the map.  
+   - Collision detection and outcome resolution based on cell size.  
+   - Sessions conclude when a player is eliminated or chooses to exit.
+
+4. **User Interface**  
+   - Intuitive GUI for session management.
+     - Button to join a random session.
+     - Nickname input field.
+     - Button to create a new session and join it.
+     - Input field for session ID to join an existing session.
+     - Button to join the specified session.
+   - Visual representation of player cells, food items, and other players.
+     - Display of player names.
+     - Display session ID.
+
+### Non-Functional Requirements
+
+1. **Performance**  
+   - The system must handle at least 100 concurrent players per session without significant lag (latency < 200ms).
 
 ## Design
 

@@ -130,16 +130,6 @@ object ClientActor:
     given Scheduler = ctx.system.scheduler
     given ExecutionContext = ctx.executionContext
 
-  private def requestWorldWithRoomCode(
-      nickName: String,
-      roomCode: String,
-      ctx: ActorContext[ClientEvent | LocalClientEvent],
-      manager: ActorRef[ChildEvent]
-  ): Behavior[ClientEvent | LocalClientEvent] =
-    given Timeout = 3.seconds
-    given Scheduler = ctx.system.scheduler
-    given ExecutionContext = ctx.executionContext
-    
     ctx.log.info(s"🏀 Requesting World to ${manager.path}...")
     manager.ask[RemoteWorld](replyTo => RequestWorld(nickName, replyTo, ctx.self)).onComplete {
       case Success(remoteWorld) =>
@@ -149,6 +139,28 @@ object ClientActor:
     }
     Behaviors.same
 
+  private def requestWorldWithRoomCode(
+      nickName: String,
+      roomCode: String,
+      ctx: ActorContext[ClientEvent | LocalClientEvent],
+      manager: ActorRef[ChildEvent]
+  ): Behavior[ClientEvent | LocalClientEvent] =
+    given Timeout = 3.seconds
+    given Scheduler = ctx.system.scheduler
+    given ExecutionContext = ctx.executionContext
+
+  ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+
+  manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
+    case Success(remoteWorld) =>
+      ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
+    case Failure(ex) =>
+      ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+      // opzionale: puoi mostrare un alert nella view
+      ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
+  }
+  Behaviors.same
+  
   /** Run the game with the given world and player.
     *
     * @param world

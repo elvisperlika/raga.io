@@ -44,7 +44,7 @@ object ClientActor:
 
     case JoinRandomRoom
     case CreateAndJoinRoom
-    case JoinFriendsRoom
+    case JoinFriendsRoom(code: String)
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
 

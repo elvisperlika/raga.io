@@ -107,6 +107,16 @@ object ClientActor:
             ctx.self ! LocalClientEvent.Tick
             run(model, gameView, localPlayer, managerRef)
 
+          case LocalClientEvent.JoinFriendsRoom(code) =>
+            ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                requestWorldWithRoomCode(nickName, code, ctx, ref)
+              case _ =>
+                view.showAlert("Service Not Available, please wait...")
+                Behaviors.same
+
           case _ =>
             ctx.log.info(s"🏀 Message not recognized: $msg")
             Behaviors.same

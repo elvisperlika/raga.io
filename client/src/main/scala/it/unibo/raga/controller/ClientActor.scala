@@ -130,6 +130,16 @@ object ClientActor:
     given Scheduler = ctx.system.scheduler
     given ExecutionContext = ctx.executionContext
 
+  private def requestWorldWithRoomCode(
+      nickName: String,
+      roomCode: String,
+      ctx: ActorContext[ClientEvent | LocalClientEvent],
+      manager: ActorRef[ChildEvent]
+  ): Behavior[ClientEvent | LocalClientEvent] =
+    given Timeout = 3.seconds
+    given Scheduler = ctx.system.scheduler
+    given ExecutionContext = ctx.executionContext
+    
     ctx.log.info(s"🏀 Requesting World to ${manager.path}...")
     manager.ask[RemoteWorld](replyTo => RequestWorld(nickName, replyTo, ctx.self)).onComplete {
       case Success(remoteWorld) =>

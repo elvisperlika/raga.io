@@ -16,6 +16,9 @@ trait ChildEvent extends Message
 
 case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], playerRef: ActorRef[ClientEvent])
     extends ChildEvent
+case class RequestWorldInRoom(
+    nickName: String, roomCode: String, replyTo: ActorRef[RemoteWorld], playerRef: ActorRef[ClientEvent]) 
+    extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
 case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
 case class SetUp(worldId: ID) extends ChildEvent

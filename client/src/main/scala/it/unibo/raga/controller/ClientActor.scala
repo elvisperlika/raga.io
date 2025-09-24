@@ -47,6 +47,8 @@ object ClientActor:
     case JoinFriendsRoom(code: String)
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
+    case JoinFriendsRoomFailed(code: String)
+
 
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
@@ -116,6 +118,10 @@ object ClientActor:
               case _ =>
                 view.showAlert("Service Not Available, please wait...")
                 Behaviors.same
+          
+          case LocalClientEvent.JoinFriendsRoomFailed(code) =>
+            view.showAlert(s"Room with code $code not found")
+            Behaviors.same
 
           case _ =>
             ctx.log.info(s"🏀 Message not recognized: $msg")
@@ -149,18 +155,17 @@ object ClientActor:
     given Scheduler = ctx.system.scheduler
     given ExecutionContext = ctx.executionContext
 
-  ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+    ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+    manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
+      case Success(remoteWorld) =>
+        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
+      case Failure(ex) =>
+        ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+        // opzionale: puoi mostrare un alert nella view
+        ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
+    }
+    Behaviors.same
 
-  manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
-    case Success(remoteWorld) =>
-      ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
-    case Failure(ex) =>
-      ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
-      // opzionale: puoi mostrare un alert nella view
-      ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
-  }
-  Behaviors.same
-  
   /** Run the game with the given world and player.
     *
     * @param world

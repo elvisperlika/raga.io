@@ -5,7 +5,7 @@
 
 ## AI Disclaimer
 
-During the preparation of this work, the authors used Chat-GPT and Gemini to 
+During the preparation of this work, the authors used Chat-GPT and Gemini to
 refine the report by improving sentence structure and correcting grammatical errors.
 After using these tools, the authors reviewed and edited the
 content as needed and takes full responsibility for the content of the
@@ -100,11 +100,8 @@ This project is a desktop application with a graphical user interface (GUI) pack
 13. Scalable server architecture to handle increasing player numbers.  
 14. A master server coordinating multiple game servers that manage individual game sessions.
 15. Dynamic allocation of players to game servers based on load and availability.
-
-### Non-Functional Requirements
-
-1. The server architecture should support scaling to accommodate increasing numbers of concurrent sessions and players.
-2. Backup and failover mechanisms to ensure session continuity in case of game server failure.
+16. The server architecture should support scaling to accommodate increasing numbers of concurrent sessions and players.
+17. Backup and failover mechanisms to ensure session continuity in case of game server failure.
 
 ## Design
 
@@ -239,6 +236,12 @@ Ideally, the design should be the same, regardless of the technological choices 
 
 <!-- - any particular _framework_ / _technology_ being exploited goes here -->
 
+- Scala: main programming language used for both client and server components.
+- Akka: utilized for building the actor-based concurrency model, facilitating communication between different components.
+  - Akka Actors: used to implement the actor model for concurrent processing.
+  - Akka Cluster: employed to create a distributed system where multiple nodes can work together.
+- Java Swing: used for creating the graphical user interface (GUI) of the client application.
+
 ## Validation
 
 ### Automatic Testing
@@ -284,7 +287,7 @@ Ideally, the design should be the same, regardless of the technological choices 
   - provide expected outcomes -->
 
 ## User Guide
- 
+
 <!-- - how to use your software?
   - provide instructions
   - provide expected outcomes

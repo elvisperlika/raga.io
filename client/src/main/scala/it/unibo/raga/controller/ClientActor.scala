@@ -155,7 +155,7 @@ object ClientActor:
     given Scheduler = ctx.system.scheduler
     given ExecutionContext = ctx.executionContext
 
-    ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+    /* ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
     manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
       case Success(remoteWorld) =>
         ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
@@ -164,7 +164,7 @@ object ClientActor:
         // opzionale: puoi mostrare un alert nella view
         ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
     }
-    Behaviors.same
+    Behaviors.same */
 
   /** Run the game with the given world and player.
     *

@@ -247,14 +247,14 @@ Below is a snippet from the `application.conf` file showing the configuration fo
 To represent in-transit data, we opted for **JSON (JavaScript Object Notation)** produced by Akka's Jackson serializer. The converse from entity to JSON and vice versa is handled automatically by Akka, which simplifies the serialization process.
 
 ```yaml
-    serializers {
-      jackson-json = "akka.serialization.jackson.JacksonJsonSerializer"
-    }
-    serialization-bindings {
-      "akka.actor.typed.ActorRef" = jackson-json
-      "akka.actor.typed.internal.adapter.ActorRefAdapter" = jackson-json
-      "it.unibo.protocol.Message" = jackson-json
-    }
+  serializers {
+    jackson-json = "akka.serialization.jackson.JacksonJsonSerializer"
+  }
+  serialization-bindings {
+    "akka.actor.typed.ActorRef" = jackson-json
+    "akka.actor.typed.internal.adapter.ActorRefAdapter" = jackson-json
+    "it.unibo.protocol.Message" = jackson-json
+  }
 ```
 
 All data is not stored persistently, as the game is designed for temporary sessions.

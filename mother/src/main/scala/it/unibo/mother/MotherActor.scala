@@ -118,7 +118,7 @@ object MotherActor:
             client ! ServiceNotAvailable()
             Behaviors.same
           case Some(child) =>
-            val newID = generateWorldID(state.children.map(_.worldId))
+            val newID = generateWorldID(state.rooms.keys.toSeq)
             ctx.log.info(s"😍 Creating friends room $newID on ${child.ref.path}")
 
             val updatedChild = child.copy(clients = client :: child.clients)

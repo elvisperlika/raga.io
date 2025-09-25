@@ -69,9 +69,7 @@ object MotherActor:
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
           client ! GamaManagerAddress(child)
         }
-        behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children,
-        rooms = newRooms,
-        ))
+        behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children))
 
       case ClientLeft(client) =>
         ctx.log.info(s"😍 Client Left: ${client.path}")

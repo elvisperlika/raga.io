@@ -35,6 +35,7 @@ case class GamaManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
 case class ServiceNotAvailable() extends ClientEvent
 case class EndGame() extends ClientEvent
+case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
@@ -44,7 +45,7 @@ case class ClientUp(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
-case class JoinFriendsRoomRequest(client: ActorRef[ClientEvent], code: ID) extends MotherEvent
+case class JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID) extends MotherEvent
 
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */

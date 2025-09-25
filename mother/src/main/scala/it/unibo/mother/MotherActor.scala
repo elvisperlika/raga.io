@@ -95,6 +95,41 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
+      case JoinRoom(client, roomId) =>
+        state.rooms.get(roomId) match
+          case Some(childState) =>
+            ctx.log.info(s"😍 Client ${client.path} joining room $roomId on ${childState.ref.path}")
+            client ! GamaManagerAddress(childState.ref)
+            val updatedChild = childState.copy(clients = client :: childState.clients)
+            behavior(state.copy(
+              children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
+              rooms = state.rooms + (roomId -> updatedChild)
+            ))
+          case None =>
+            ctx.log.info(s"😭 Room $roomId not found for client ${client.path}")
+            client ! JoinFriendsRoomFailed(roomId)
+            Behaviors.same
+
+      case CreateFriendsRoom(client) =>
+        findFreeChild(state) match
+          case None =>
+            client ! ServiceNotAvailable()
+            Behaviors.same
+          case Some(child) =>
+            val newID = generateWorldID(state.children.map(_.worldId))
+            ctx.log.info(s"😍 Creating friends room $newID on ${child.ref.path}")
+
+            val updatedChild = child.copy(clients = client :: child.clients)
+            val newRooms = state.rooms + (newID -> updatedChild)
+
+            client ! FriendsRoomCreated(newID)
+            client ! GamaManagerAddress(updatedChild.ref)
+
+            behavior(state.copy(
+              children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
+              rooms = newRooms
+            ))
+
   /** Generate a unique world ID not present in the given list of IDs
     *
     * @param ids

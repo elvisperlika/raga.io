@@ -17,6 +17,7 @@ import it.unibo.protocol.MotherEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 import it.unibo.protocol.ServiceNotAvailable
 import it.unibo.protocol.SetUp
+import it.unibo.protocol.*
 
 private case class ChildState(
     ref: ActorRef[ChildEvent],
@@ -93,7 +94,7 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
-      case JoinFriendsRoom(client, roomId) =>
+      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID) =>
         state.rooms.get(roomId) match
           case Some(childState) =>
             ctx.log.info(s"😍 Client ${client.path} joining room $roomId")
@@ -112,7 +113,7 @@ object MotherActor:
             client ! JoinFriendsRoomFailed(roomId)
             Behaviors.same
 
-      case CreateFriendsRoom(client) =>
+      case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
         findFreeChild(state) match
           case None =>
             client ! ServiceNotAvailable()

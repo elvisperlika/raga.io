@@ -37,6 +37,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.Failure
 import scala.util.Success
+import it.unibo.protocol.*
 
 object ClientActor:
 
@@ -121,6 +122,30 @@ object ClientActor:
           
           case LocalClientEvent.JoinFriendsRoomFailed(code) =>
             view.showAlert(s"Room with code $code not found")
+            Behaviors.same
+
+          case LocalClientEvent.CreateAndJoinRoom =>
+            ctx.log.info("🏀 Create & Join Room pressed...")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                // esempio: chiedi al "mother" di creare una stanza
+                ctx.log.info(s"🏀 Asking to create a room for $nickName")
+                ref ! CreateFriendsRoom(ctx.self) // messaggio definito nei MotherEvent
+              case None =>
+                view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
+
+          case JoinNetwork(MemberLeft(member)) =>
+            ctx.log.info(s"🏀 Member left: ${member.address}")
+            Behaviors.same
+
+          case JoinNetwork(MemberRemoved(member, previousStatus)) =>
+            ctx.log.info(s"🏀 Member removed: ${member.address}, previous status was $previousStatus")
+            Behaviors.same
+
+          case JoinNetwork(UnreachableMember(member)) =>
+            ctx.log.info(s"🏀 Member unreachable: ${member.address}")
             Behaviors.same
 
           case _ =>

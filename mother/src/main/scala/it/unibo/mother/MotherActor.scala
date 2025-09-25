@@ -63,7 +63,7 @@ object MotherActor:
         child ! SetUp(newID)
 
         val newChildState = ChildState(ref = child, worldId = newID)
-        val newRooms = state.rooms + (newID -> newChildState)
+        //val newRooms = state.rooms + (newID -> newChildState)
 
         state.pendingClients.foreach { client =>
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
@@ -95,16 +95,20 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
-      case JoinRoom(client, roomId) =>
+      case JoinFriendsRoom(client, roomId) =>
         state.rooms.get(roomId) match
           case Some(childState) =>
-            ctx.log.info(s"😍 Client ${client.path} joining room $roomId on ${childState.ref.path}")
-            client ! GamaManagerAddress(childState.ref)
+            ctx.log.info(s"😍 Client ${client.path} joining room $roomId")
             val updatedChild = childState.copy(clients = client :: childState.clients)
+            val updatedRooms = state.rooms + (roomId -> updatedChild)
+
+            client ! GamaManagerAddress(childState.ref)
+
             behavior(state.copy(
               children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
-              rooms = state.rooms + (roomId -> updatedChild)
+              rooms = updatedRooms
             ))
+
           case None =>
             ctx.log.info(s"😭 Room $roomId not found for client ${client.path}")
             client ! JoinFriendsRoomFailed(roomId)

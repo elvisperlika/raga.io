@@ -307,6 +307,25 @@ All data is not stored persistently, as the game is designed for temporary sessi
 - were archive _released_ onto some archive repository (e.g. Maven, PyPI, npm, etc.)?
   - how to _install_ them? -->
 
+Each release is packaged into three separate JAR files: one for the **Mother Server**, one for the **Child Server**, and one for the **Client**.  
+This modular structure enables independent deployment and scaling of each component according to demand.
+
+All JAR files follow **semantic versioning** (e.g., `1.0.0`, `1.1.0`, `2.0.0`), making it easier to track changes and maintain compatibility across components.
+
+The JARs are distributed through a public GitHub repository, where users can download the latest versions. Each release is also tagged in the repository for convenient access.
+
+Since the executables run on any system with a **Java Runtime Environment (JRE)**, they are fully platform-independent. Currently, they are executed locally, but with proper configuration they can also be deployed on remote servers.
+
+The installation process is straightforward:
+
+1. Ensure that a compatible JRE is installed on the system.
+2. Download the appropriate JAR files from the GitHub repository.
+3. Run the JAR files using the command line with `java -jar <filename>.jar`.
+   To launch the entire system, follow this sequence (different order is also possible, but the Mother Server must always be started first):
+   1. Start the Mother Server first.
+   2. Start one or more Child Servers.
+   3. Finally, launch the Client application.
+
 ## Deployment
 
 <!-- - should one install your software from scratch, how to do it?

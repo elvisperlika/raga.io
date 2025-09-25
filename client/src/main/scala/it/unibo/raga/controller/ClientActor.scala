@@ -37,6 +37,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.Failure
 import scala.util.Success
+import it.unibo.protocol.*
 
 object ClientActor:
 
@@ -44,9 +45,11 @@ object ClientActor:
 
     case JoinRandomRoom
     case CreateAndJoinRoom
-    case JoinFriendsRoom
+    case JoinFriendsRoom(code: String)
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
+    case JoinFriendsRoomFailed(code: String)
+
 
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
@@ -107,6 +110,44 @@ object ClientActor:
             ctx.self ! LocalClientEvent.Tick
             run(model, gameView, localPlayer, managerRef)
 
+          case LocalClientEvent.JoinFriendsRoom(code) =>
+            ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                requestWorldWithRoomCode(nickName, code, ctx, ref)
+              case _ =>
+                view.showAlert("Service Not Available, please wait...")
+                Behaviors.same
+          
+          case LocalClientEvent.JoinFriendsRoomFailed(code) =>
+            view.showAlert(s"Room with code $code not found")
+            Behaviors.same
+
+          case LocalClientEvent.CreateAndJoinRoom =>
+            ctx.log.info("🏀 Create & Join Room pressed...")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                // esempio: chiedi al "mother" di creare una stanza
+                ctx.log.info(s"🏀 Asking to create a room for $nickName")
+                ref ! CreateFriendsRoom(ctx.self) // messaggio definito nei MotherEvent
+              case None =>
+                view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
+
+          case JoinNetwork(MemberLeft(member)) =>
+            ctx.log.info(s"🏀 Member left: ${member.address}")
+            Behaviors.same
+
+          case JoinNetwork(MemberRemoved(member, previousStatus)) =>
+            ctx.log.info(s"🏀 Member removed: ${member.address}, previous status was $previousStatus")
+            Behaviors.same
+
+          case JoinNetwork(UnreachableMember(member)) =>
+            ctx.log.info(s"🏀 Member unreachable: ${member.address}")
+            Behaviors.same
+
           case _ =>
             ctx.log.info(s"🏀 Message not recognized: $msg")
             Behaviors.same
@@ -126,6 +167,27 @@ object ClientActor:
         ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
       case Failure(ex) =>
         ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+    }
+    Behaviors.same
+
+  private def requestWorldWithRoomCode(
+      nickName: String,
+      roomCode: String,
+      ctx: ActorContext[ClientEvent | LocalClientEvent],
+      manager: ActorRef[ChildEvent]
+  ): Behavior[ClientEvent | LocalClientEvent] =
+    given Timeout = 3.seconds
+    given Scheduler = ctx.system.scheduler
+    given ExecutionContext = ctx.executionContext
+
+    ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+    manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
+      case Success(remoteWorld) =>
+        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
+      case Failure(ex) =>
+        ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+        // opzionale: puoi mostrare un alert nella view
+        ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
     }
     Behaviors.same
 

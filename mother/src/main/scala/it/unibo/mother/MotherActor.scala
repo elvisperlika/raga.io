@@ -17,6 +17,7 @@ import it.unibo.protocol.MotherEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 import it.unibo.protocol.ServiceNotAvailable
 import it.unibo.protocol.SetUp
+import it.unibo.protocol.*
 
 private case class ChildState(
     ref: ActorRef[ChildEvent],
@@ -26,7 +27,8 @@ private case class ChildState(
 
 private case class MotherState(
     children: List[ChildState] = List.empty,
-    pendingClients: List[ActorRef[ClientEvent]] = List.empty
+    pendingClients: List[ActorRef[ClientEvent]] = List.empty,
+    rooms: Map[ID, ChildState] = Map.empty
 )
 
 object MotherActor:
@@ -60,6 +62,10 @@ object MotherActor:
         ctx.log.info(s"😍 Child Up: ${child.path}")
         val newID = generateWorldID(state.children.map(_.worldId))
         child ! SetUp(newID)
+
+        val newChildState = ChildState(ref = child, worldId = newID)
+        //val newRooms = state.rooms + (newID -> newChildState)
+
         state.pendingClients.foreach { client =>
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
           client ! GamaManagerAddress(child)
@@ -87,6 +93,45 @@ object MotherActor:
       case ChildServerLeft(child) =>
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
+
+      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID) =>
+        state.rooms.get(roomId) match
+          case Some(childState) =>
+            ctx.log.info(s"😍 Client ${client.path} joining room $roomId")
+            val updatedChild = childState.copy(clients = client :: childState.clients)
+            val updatedRooms = state.rooms + (roomId -> updatedChild)
+
+            client ! GamaManagerAddress(childState.ref)
+
+            behavior(state.copy(
+              children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
+              rooms = updatedRooms
+            ))
+
+          case None =>
+            ctx.log.info(s"😭 Room $roomId not found for client ${client.path}")
+            client ! JoinFriendsRoomFailed(roomId)
+            Behaviors.same
+
+      case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
+        findFreeChild(state) match
+          case None =>
+            client ! ServiceNotAvailable()
+            Behaviors.same
+          case Some(child) =>
+            val newID = generateWorldID(state.rooms.keys.toSeq)
+            ctx.log.info(s"😍 Creating friends room $newID on ${child.ref.path}")
+
+            val updatedChild = child.copy(clients = client :: child.clients)
+            val newRooms = state.rooms + (newID -> updatedChild)
+
+            client ! FriendsRoomCreated(newID)
+            client ! GamaManagerAddress(updatedChild.ref)
+
+            behavior(state.copy(
+              children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
+              rooms = newRooms
+            ))
 
   /** Generate a unique world ID not present in the given list of IDs
     *

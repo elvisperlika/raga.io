@@ -26,7 +26,8 @@ private case class ChildState(
 
 private case class MotherState(
     children: List[ChildState] = List.empty,
-    pendingClients: List[ActorRef[ClientEvent]] = List.empty
+    pendingClients: List[ActorRef[ClientEvent]] = List.empty,
+    rooms: Map[ID, ChildState] = Map.empty
 )
 
 object MotherActor:
@@ -60,11 +61,17 @@ object MotherActor:
         ctx.log.info(s"😍 Child Up: ${child.path}")
         val newID = generateWorldID(state.children.map(_.worldId))
         child ! SetUp(newID)
+
+        val newChildState = ChildState(ref = child, worldId = newID)
+        val newRooms = state.rooms + (newID -> newChildState)
+
         state.pendingClients.foreach { client =>
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
           client ! GamaManagerAddress(child)
         }
-        behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children))
+        behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children,
+        rooms = newRooms,
+        ))
 
       case ClientLeft(client) =>
         ctx.log.info(s"😍 Client Left: ${client.path}")

@@ -232,6 +232,33 @@ Ideally, the design should be the same, regardless of the technological choices 
 - how should components be _authorized_?
   - e.g. RBAC, ABAC, etc. -->
 
+We choose to use **TCP (Transmission Control Protocol)** for several key reasons, with reliability and order being the most critical. Unlike UDP, TCP is a "connection-oriented" protocol that ensures data packets are delivered, and if a packet is lost, it's automatically resent. This is crucial for maintaining a consistent game state, especially for core mechanics like player movements, collisions, and cell consumption, where a lost packet could lead to players appearing to be in different locations or a desynchronized game world. Furthermore, TCP guarantees that packets arrive in the correct order, which is essential for deterministic game logic. UDP is favored for fast-paced shooters where low latency is paramount, the nature of an Agar.io clone tolerates slightly higher latency in exchange for the absolute reliability and synchronization that TCP provides.
+
+Below is a snippet from the `application.conf` file showing the configuration for using TCP as the transport protocol with Akka's remote artery:
+
+```yaml
+  remote {
+    artery {
+      transport = tcp
+    }
+  }
+```
+
+To represent in-transit data, we opted for **JSON (JavaScript Object Notation)** produced by Akka's Jackson serializer. The converse from entity to JSON and vice versa is handled automatically by Akka, which simplifies the serialization process.
+
+```yaml
+    serializers {
+      jackson-json = "akka.serialization.jackson.JacksonJsonSerializer"
+    }
+    serialization-bindings {
+      "akka.actor.typed.ActorRef" = jackson-json
+      "akka.actor.typed.internal.adapter.ActorRefAdapter" = jackson-json
+      "it.unibo.protocol.Message" = jackson-json
+    }
+```
+
+All data is not stored persistently, as the game is designed for temporary sessions.
+
 ### Technological details
 
 <!-- - any particular _framework_ / _technology_ being exploited goes here -->

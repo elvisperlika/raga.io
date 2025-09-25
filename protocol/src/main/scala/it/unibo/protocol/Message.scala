@@ -44,6 +44,8 @@ case class ClientUp(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
+case class JoinFriendsRoomRequest(client: ActorRef[ClientEvent], code: ID) extends MotherEvent
+
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */
 

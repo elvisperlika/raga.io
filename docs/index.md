@@ -115,6 +115,8 @@ Ideally, the design should be the same, regardless of the technological choices 
 <!-- - Which architectural style?
   - why? -->
 
+
+
 ### Infrastructure
 
 <!-- - are there _infrastructural components_ that need to be introduced? _how many_?
@@ -294,6 +296,16 @@ All data is not stored persistently, as the game is designed for temporary sessi
   - what did you test?
   - why wasn't it automatic? -->
 
+Automatic tests were not implemented due to time constraints and the complexity of simulating real-time multiplayer interactions. However, manual testing was conducted extensively to ensure the system met the functional requirements.
+
+Manual testing focused on the following areas:
+
+1. **Session Management**: Verified the ability to create, join, and manage game sessions.
+2. **Real-time Interaction**: Ensured that player movements and size increases, food consumption, and collisions were accurately reflected across all clients.
+3. **GUI Functionality**: Tested all GUI elements for usability and responsiveness.
+4. **Scalability**: Simulated multiple players joining a session to observe performance and responsiveness.
+5. **Error Handling**: Tested the system's response to network interruptions and server failures.
+
 ## Release
 
 <!-- - how where components organized into _inter-dependant modules_ or just a single monolith?
@@ -332,12 +344,56 @@ The installation process is straightforward:
   - provide instructions
   - provide expected outcomes -->
 
+The following instructions guide you through deploying the Raga.io system from scratch on your local machine - for remote deployment, additional configuration may be required.
+
+To deploy, follow these steps:
+
+- **Prerequisites**:
+  - Ensure that you have a compatible Java Runtime Environment (JRE) installed on your system.
+- **Download the JAR files**
+  - Mother Server JAR
+  - Child Server JAR
+  - Client JAR
+- **Start the Mother Server**:
+  - Open a terminal and execute the following command:
+
+    ```bash
+      java -jar mother-server-assembly-*-SNAPSHOT.jar
+    ```  
+
+  - The Child Servers must be started next, using a similar command:
+
+    ```bash
+      java -jar child-server-assembly-*-SNAPSHOT.jar
+    ```
+
+  - Finally, the Client application can be launched:
+
+    ```bash
+      java -jar client-assembly-*-SNAPSHOT.jar
+    ```
+
 ## User Guide
 
 <!-- - how to use your software?
   - provide instructions
   - provide expected outcomes
   - provide screenshots if possible -->
+
+### Menu page
+
+<!-- add image here and reduce size -->
+
+<img src="./images/menu.png" alt="drawing" width="500"/>
+
+In the menu page, the user can:
+
+- Enter a nickname in the "Nickname" text field.
+- Join a random session by clicking the "Join Random Battle" button.
+- Create a new session by clicking the "Create and Join a room" button.
+- Write a session ID in the "Session ID" text field
+- Join a specific session by clicking the "Join friend's room" button (the session ID must be valid).
+- At the bottom of the page, the user can see network status information.
 
 ## Self-evaluation
 

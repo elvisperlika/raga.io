@@ -37,7 +37,7 @@ Achievements:
   - Command-line application (CLI could be used by humans or scripts)
   - Library
   - Web-service(s) -->
-  
+
 This project is a desktop application with a graphical user interface (GUI) packaged as a Java Archive (JAR) file. It can be executed on any system with a Java Runtime Environment (JRE) installed.
 
 <!-- - Use case collection
@@ -47,11 +47,11 @@ This project is a desktop application with a graphical user interface (GUI) pack
   - does the system need to _store_ user's __data__? _which_? _where_?
   - most likely, there will be _multiple_ __roles__ -->
 
-- **Primary Users**: The game is designed for casual gamers who enjoy competitive multiplayer experiences. Players can be located anywhere worldwide, as it is built for online play.  
-- **Usage Patterns**: Sessions are typically short and played during leisure time, ranging from just a few minutes up to an hour.  
-- **Interaction Method**: Players interact through a **graphical user interface (GUI)** on desktop computers, using a mouse to control their in-game cell.  
-- **Data Handling**: No personal data is stored. The system only maintains temporary session data (e.g., player positions, scores), which is discarded once the session ends.  
-- **User Roles**: There is only one role: **Player**. All users share the same capabilities, with no role-based differences or special permissions.  
+- **Primary Users**: The game is designed for casual gamers who enjoy competitive multiplayer experiences. Players can be located anywhere worldwide, as it is built for online play.
+- **Usage Patterns**: Sessions are typically short and played during leisure time, ranging from just a few minutes up to an hour.
+- **Interaction Method**: Players interact through a **graphical user interface (GUI)** on desktop computers, using a mouse to control their in-game cell.
+- **Data Handling**: No personal data is stored. The system only maintains temporary session data (e.g., player positions, scores), which is discarded once the session ends.
+- **User Roles**: There is only one role: **Player**. All users share the same capabilities, with no role-based differences or special permissions.
 
 ## Requirements
 
@@ -97,7 +97,7 @@ This project is a desktop application with a graphical user interface (GUI) pack
 12. Visual representation of player cells, food items, and other players.
     - Display player names.
     - Display the session ID so players can share it with friends.
-13. Scalable server architecture to handle increasing player numbers.  
+13. Scalable server architecture to handle increasing player numbers.
 14. A master server coordinating multiple game servers that manage individual game sessions.
 15. Dynamic allocation of players to game servers based on load and availability.
 16. The server architecture should support scaling to accommodate increasing numbers of concurrent sessions and players.
@@ -115,7 +115,7 @@ Ideally, the design should be the same, regardless of the technological choices 
 <!-- - Which architectural style?
   - why? -->
 
-
+This project employs a **client-server architecture** with a distributed system design. The architecture consists of three main components: the Client, the Mother Server, and multiple Child Servers.
 
 ### Infrastructure
 
@@ -130,6 +130,40 @@ Ideally, the design should be the same, regardless of the technological choices 
   - e.g. DNS, _service discovery_, _load balancing_, _etc._
 
 > Component diagrams are welcome here -->
+
+#### Deployment
+
+The system architecture consists of three main components:
+
+<img src="./images/deployment.png" alt="drawing" width="1000"/>
+
+- **Client**: The client application is a desktop GUI that players use to interact with the game. It handles user input, renders the game state, and communicates with the servers.
+- **Mother Server**: The Mother Server acts as a central coordinator. It manages game sessions, handles player matchmaking, and distributes players to Child Servers based on load and availability.
+- **Child Servers**: Each Child Server manages one game session. It handles real-time game logic, player interactions, and communicates with the Mother Server for session management.
+
+#### Components
+
+<img src="./images/components.png" alt="drawing" width="1000"/>
+
+Client service:
+
+- **LoginService**: manages user connection with the Mother Server.
+- **GamePlayService**: handles gameplay activities and user interactions and communicates with the Child Server for real-time updates.
+
+Mother Server service:
+
+- **MembersManager**: discovers Clients and Child Servers that access the system and manages pending Clients when no Child Server is available.
+- **BackupService**: handles backup data from Child Servers.
+- **BalanceService**: distributes clients to Child Servers based on load.
+
+Child Server service:
+
+- **BackupService**: manages local backups and forwards them to the Mother Server.
+- **ClientsManager**: receives and manages clients assigned from the Mother Server.
+- **SyncService**: synchronizes the game world state between local and remote instances.
+
+This architecture allows for scalability, as multiple Child Servers can be added to handle more game sessions as needed. The Mother Server is the seed node of the system and must always be started first. Child Servers can be started and stopped dynamically, allowing for flexible resource management.
+Child Servers can be hosted on different machines or cloud instances to distribute the load effectively, it's not mandatory to have them on the same network or datacenter as the Mother Server.
 
 ### Modelling
 
@@ -205,6 +239,12 @@ Ideally, the design should be the same, regardless of the technological choices 
 - In case of __network partitioning__, how does the system behave?
   - _why_? _how_? -->
 
+The software is designed to be highly available, with a distributed architecture that allows multiple game servers to handle sessions concurrently.
+
+The Mother Server acts as a central coordinator, managing the distribution of players to various Child Servers to avoid overloading any single server. This load balancing enhances availability by ensuring that if one server becomes overwhelmed, new players can be directed to less busy servers.
+
+If one game server fails, players can be redirected to another server without losing their session (it's mandatory to have a Child Server that is managing a game session).
+
 ### Security
 
 <!-- - Is there any form of __authentication__?
@@ -220,6 +260,8 @@ Ideally, the design should be the same, regardless of the technological choices 
 
 ---
 <!-- Riparti da qui  -->
+
+There are not any kind of security mechanisms implemented, as the game is designed for casual play without sensitive data involved. Users are not required to create accounts or provide personal information, they can simply enter a nickname to join a game session. The system does not store any personal data, and all session data is temporary and discarded once the session ends.
 
 ## Implementation
 
@@ -273,7 +315,7 @@ All data is not stored persistently, as the game is designed for temporary sessi
 
 ## Validation
 
-### Automatic Testing
+<!-- ### Automatic Testing -->
 
 <!-- - how were individual components **_unit_-test**ed?
 - how was communication, interaction, and/or integration among components tested?
@@ -319,7 +361,7 @@ Manual testing focused on the following areas:
 - were archive _released_ onto some archive repository (e.g. Maven, PyPI, npm, etc.)?
   - how to _install_ them? -->
 
-Each release is packaged into three separate JAR files: one for the **Mother Server**, one for the **Child Server**, and one for the **Client**.  
+Each release is packaged into three separate JAR files: one for the **Mother Server**, one for the **Child Server**, and one for the **Client**.
 This modular structure enables independent deployment and scaling of each component according to demand.
 
 All JAR files follow **semantic versioning** (e.g., `1.0.0`, `1.1.0`, `2.0.0`), making it easier to track changes and maintain compatibility across components.
@@ -359,7 +401,7 @@ To deploy, follow these steps:
 
     ```bash
       java -jar mother-server-assembly-*-SNAPSHOT.jar
-    ```  
+    ```
 
   - The Child Servers must be started next, using a similar command:
 
@@ -380,11 +422,17 @@ To deploy, follow these steps:
   - provide expected outcomes
   - provide screenshots if possible -->
 
-### Menu page
+### Menu view
 
 <!-- add image here and reduce size -->
 
-<img src="./images/menu.png" alt="drawing" width="500"/>
+<img src="./images/menu3.png" alt="drawing" width="300"/>
+<img src="./images/menu2.png" alt="drawing" width="300"/>
+<img src="./images/menu1.png" alt="drawing" width="300"/>
+
+- Image 1: Menu view when the server is not reachable.
+- Image 2: Menu view is connected with the Mother server but not with any Child server.
+- Image 3: Menu view when connected to Mother and Child server (ready to play).
 
 In the menu page, the user can:
 
@@ -394,6 +442,21 @@ In the menu page, the user can:
 - Write a session ID in the "Session ID" text field
 - Join a specific session by clicking the "Join friend's room" button (the session ID must be valid).
 - At the bottom of the page, the user can see network status information.
+
+### Game view
+
+<!-- add 3 images images here in a row -->
+<img src="./images/game1.png" alt="drawing" width="300"/>
+<img src="./images/game2.png" alt="drawing" width="300"/>
+<img src="./images/game3.png" alt="drawing" width="300"/>
+
+In the game page, the user can:
+
+- View the Room Code on the top left corner, which can be shared with friends to join the same session.
+- Move the cell using the mouse cursor.
+- See their nickname displayed above their cell.
+- View other players' nicknames above their respective cells.
+- See food items as small circles scattered around the map.
 
 ## Self-evaluation
 

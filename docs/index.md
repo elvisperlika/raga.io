@@ -3,6 +3,39 @@
 - [Elvis Perlika](mailto:elvis.perlika@studio.unibo.it)
 - [Eleonora Falconi](mailto:eleonora.falconi2@studio.unibo.it)
 
+## Table of Contents
+
+<!-- add below the toc -->
+- [Raga.io](#ragaio)
+  - [Table of Contents](#table-of-contents)
+  - [AI Disclaimer](#ai-disclaimer)
+  - [Abstract](#abstract)
+  - [Concept](#concept)
+  - [Requirements](#requirements)
+    - [Functional Requirements](#functional-requirements)
+  - [Design](#design)
+    - [Architecture](#architecture)
+    - [Infrastructure](#infrastructure)
+      - [Deployment](#deployment)
+      - [Components](#components)
+    - [Modelling](#modelling)
+    - [Interaction](#interaction)
+    - [Behaviour](#behaviour)
+    - [Data and Consistency Issues](#data-and-consistency-issues)
+    - [Fault-Tolerance](#fault-tolerance)
+    - [Availability](#availability)
+    - [Security](#security)
+  - [Implementation](#implementation)
+    - [Technological details](#technological-details)
+  - [Validation](#validation)
+    - [Acceptance test](#acceptance-test)
+  - [Release](#release)
+  - [Deployment](#deployment-1)
+  - [User Guide](#user-guide)
+    - [Menu view](#menu-view)
+    - [Game view](#game-view)
+  - [Self-evaluation](#self-evaluation)
+
 ## AI Disclaimer
 
 During the preparation of this work, the authors used Chat-GPT and Gemini to

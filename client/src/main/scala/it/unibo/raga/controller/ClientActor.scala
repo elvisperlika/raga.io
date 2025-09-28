@@ -9,8 +9,8 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.typed.{Cluster, Subscribe, ClusterEvent}
-import akka.cluster.typed.ClusterEvent._
+import akka.cluster.typed._
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.Subscribe
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
@@ -50,8 +50,7 @@ object ClientActor:
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
     case JoinFriendsRoomFailed(code: String)
-
-
+    
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self)
@@ -135,6 +134,11 @@ object ClientActor:
                 ref ! CreateFriendsRoom(ctx.self) // messaggio definito nei MotherEvent
               case None =>
                 view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
+
+          case FriendsRoomCreated(roomId) =>
+            ctx.log.info(s"🏀 Room created with code: $roomId")
+            view.showAlert(s"Room created! Share this code: $roomId")
             Behaviors.same
 
           case JoinNetwork(MemberUp(member)) =>

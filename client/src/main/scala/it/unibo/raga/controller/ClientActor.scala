@@ -9,7 +9,8 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.typed.Cluster
+import akka.cluster.typed.{Cluster, Subscribe, ClusterEvent}
+import akka.cluster.typed.ClusterEvent._
 import akka.cluster.typed.Subscribe
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
@@ -136,8 +137,8 @@ object ClientActor:
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
 
-          case JoinNetwork(MemberLeft(member)) =>
-            ctx.log.info(s"🏀 Member left: ${member.address}")
+          case JoinNetwork(MemberUp(member)) =>
+            ctx.log.info(s"🏀 Member up: ${member.address}")
             Behaviors.same
 
           case JoinNetwork(MemberRemoved(member, previousStatus)) =>
@@ -148,8 +149,8 @@ object ClientActor:
             ctx.log.info(s"🏀 Member unreachable: ${member.address}")
             Behaviors.same
 
-          case _ =>
-            ctx.log.info(s"🏀 Message not recognized: $msg")
+          case JoinNetwork(ReachableMember(member)) =>
+            ctx.log.info(s"🏀 Member reachable again: ${member.address}")
             Behaviors.same
 
   private def requestWorld(

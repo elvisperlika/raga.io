@@ -93,6 +93,15 @@ object ChildActor:
             case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
           work(newWorld, managedPlayers)
 
+        case RequestWorldInRoom(nickName, roomCode, replyTo, playerRef) =>
+          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
+          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+          val newWorld = world.copy(players = world.players :+ newPlayer)
+
+          replyTo ! RemoteWorld(newWorld, newPlayer)
+          work(newWorld, managedPlayers + (nickName -> playerRef))
+
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *
     * @param oldWorld

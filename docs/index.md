@@ -45,6 +45,12 @@
         - [Handled Messages](#handled-messages-1)
     - [Data and Consistency Issues](#data-and-consistency-issues)
     - [Fault-Tolerance](#fault-tolerance)
+      - [Failure detection via Akka Cluster / Receptionist](#failure-detection-via-akka-cluster--receptionist)
+      - [Graceful degradation when capacity is unavailable](#graceful-degradation-when-capacity-is-unavailable)
+      - [Cleanup on disconnections](#cleanup-on-disconnections)
+      - [Back-pressure at the client](#back-pressure-at-the-client)
+      - [Data Replication and State Sharing](#data-replication-and-state-sharing)
+      - [Gaps and Risks](#gaps-and-risks)
     - [Availability](#availability)
     - [Security](#security)
   - [Implementation](#implementation)
@@ -573,6 +579,8 @@ This avoids blocking the main child behaviour on per-client messaging and confin
 - Is there any data that needs to be shared between components?
   - _why_? _what_ data? -->
 
+The game is designed for temporary sessions, and no persistent data storage is required. All game state data, including player positions, sizes, and food items, are maintained in memory during the session. Once a session ends (either by player elimination or voluntary exit), all associated data is discarded.
+
 ### Fault-Tolerance
 
 <!-- - Is there any form of data __replication__ / federation / sharing?
@@ -583,6 +591,40 @@ This avoids blocking the main child behaviour on per-client messaging and confin
 
 - Is there any form of __error handling__?
   - _what_ happens when a component fails? _why_? _how_? -->
+
+#### Failure detection via Akka Cluster / Receptionist
+
+- Clients and servers register with the Receptionist.
+- `ClientActor` subscribes to cluster membership updates (`JoinNetwork(MemberUp)`).
+- `MotherActor` spawns a `MembersManager` that monitors the cluster.
+- This provides basic liveness detection for nodes joining and leaving.
+
+#### Graceful degradation when capacity is unavailable
+
+- If no child server is available, `MotherActor` replies with `ServiceNotAvailable()` and queues clients in `pendingClients`.
+- When a child server later joins (`ChildServerUp`), pending clients are assigned.
+
+#### Cleanup on disconnections
+
+- `MotherActor` handles `ClientLeft` by removing the client and notifying the relevant child with `ChildClientLeft`.
+- `ChildActor` removes the player from the world and broadcasts an authoritative snapshot to remaining players.
+
+#### Back-pressure at the client
+
+- The client run loop enforces a ping-pong mechanism: it only sends a new update once it receives `ReceivedRemoteWorld`.
+- This avoids sending too many updates at once.
+
+#### Data Replication and State Sharing
+
+- Each `ChildActor` keeps its world in-memory only.
+- `MotherActor` tracks routing metadata (children, pending clients) but does not store game state.
+- Backup mechanisms will be implemented in future iterations.
+
+#### Gaps and Risks
+
+- Mother is a single point of failure for discovery and matchmaking.
+- No application-level timeouts or retries for client–server sync.
+- No automatic failover or reassignment when a child dies.
 
 ### Availability
 

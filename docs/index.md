@@ -361,7 +361,35 @@ In this mode manages all events prior to entering a game session. It may hold an
     - Creates a local world model and player representation.
     - Initializes `ImmutableGameStateManager` and `LocalView`.
     - Closes the menu and shows the game view.
-    - Sends an initial `Tick` to itself to start the game loop.
+    - Sends an initial `Tick` to itself to start the game loop in the **`run`** behavior.
+
+#### In-Game Mode
+
+This mode handles the main game loop and implements a deterministic, synchronized update pattern.
+A timer triggers `Tick` every **50 ms**.
+The `isSynced` flag ensures only one update is in-flight between client and server:
+
+- `isSynced = true` → the client processes input and sends an update.
+- `isSynced = false` → the client waits for the server’s response before proceeding.
+
+##### Handled Messages
+
+- **`LocalClientEvent.Tick`** (only when `isSynced = true`)
+  - Reads player input direction from `gameView`.
+  - Updates the local model (`movePlayerDirection` and `tick()`).
+  - Detects eaten players and notifies the server (`EatenPlayer` messages).
+  - Serializes the world state and sends `RequestRemoteWorldUpdate`.
+  - Transitions to `isSynced = false` to await a response.
+
+- **`ReceivedRemoteWorld(remoteWorld)`**
+  - Replaces the local model with the authoritative server state.
+  - Updates and repaints the view.
+  - Transitions back to `isSynced = true`.
+
+- **`EndGame()`**
+  - Hides the main game view.
+  - Displays the end game screen via `EndGameView`.
+  - Transitions into `endGame()` state.
 
 #### Mother Actor
 

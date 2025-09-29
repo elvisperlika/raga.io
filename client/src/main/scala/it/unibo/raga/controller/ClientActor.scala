@@ -147,8 +147,8 @@ object ClientActor:
             ctx.log.info(s"🏀 Member up: ${member.address}")
             Behaviors.same
 
-          case JoinNetwork(MemberLeft(member, previousStatus)) =>
-            ctx.log.info(s"Member is Leaving: ${member.address}")
+          case JoinNetwork(MemberLeft(member)) =>
+            ctx.log.info(s"⚠️ Member is Leaving: ${member.address}")
             Behaviors.same
 
           case JoinNetwork(MemberExited(member)) =>

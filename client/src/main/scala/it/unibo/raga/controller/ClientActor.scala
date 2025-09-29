@@ -10,6 +10,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed._
+import akka.cluster.typed.{Cluster, Subscribe}
+import akka.cluster.ClusterEvent._
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.Subscribe
 import akka.util.Timeout
@@ -145,16 +147,24 @@ object ClientActor:
             ctx.log.info(s"🏀 Member up: ${member.address}")
             Behaviors.same
 
+          case JoinNetwork(MemberLeft(member, previousStatus)) =>
+            ctx.log.info(s"Member is Leaving: ${member.address}")
+            Behaviors.same
+
+          case JoinNetwork(MemberExited(member)) =>
+            ctx.log.info(s"Member is Exiting: ${member.address}")
+            Behaviors.same
+
           case JoinNetwork(MemberRemoved(member, previousStatus)) =>
-            ctx.log.info(s"🏀 Member removed: ${member.address}, previous status was $previousStatus")
+            ctx.log.info(s"Member is Removed: ${member.address} after $previousStatus")
             Behaviors.same
 
           case JoinNetwork(UnreachableMember(member)) =>
-            ctx.log.info(s"🏀 Member unreachable: ${member.address}")
+            ctx.log.info(s"Member detected as unreachable: ${member.address}")
             Behaviors.same
 
           case JoinNetwork(ReachableMember(member)) =>
-            ctx.log.info(s"🏀 Member reachable again: ${member.address}")
+            ctx.log.info(s"Member detected as reachable again: ${member.address}")
             Behaviors.same
 
   private def requestWorld(

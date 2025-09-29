@@ -30,7 +30,16 @@
     - [Interaction](#interaction)
       - [Client - Mother Server - Child Server connection and gameplay flow](#client---mother-server---child-server-connection-and-gameplay-flow)
       - [Mother Server - Child Server flow](#mother-server---child-server-flow)
+      - [Backup flow](#backup-flow)
     - [Behaviour](#behaviour)
+      - [Client Actor](#client-actor)
+      - [Initialization](#initialization)
+      - [Homepage Mode](#homepage-mode)
+        - [Handled messages](#handled-messages)
+      - [Mother Actor](#mother-actor)
+        - [Initialization](#initialization-1)
+        - [Main Behaviour](#main-behaviour)
+      - [Child Actor](#child-actor)
     - [Data and Consistency Issues](#data-and-consistency-issues)
     - [Fault-Tolerance](#fault-tolerance)
     - [Availability](#availability)
@@ -321,6 +330,33 @@ As seen in the class diagrams above, there are a set of classes shared between t
 
 ![drawing](./images/interaction2.png)
 
+- MembersManager continuously monitors the network.
+
+- When a **Client joins**:
+  - MembersManager detects the client.
+  - It notifies the MotherServer.
+  - MotherServer looks for a ChildServer with low workload.
+  - MotherServer assigns the ChildServer to the Client.
+  - If the selected ChildServer has no players:
+    - MotherServer generates a new World ID.
+    - Sends the World ID to the ChildServer.
+    - ChildServer generates the world.
+    - Client is inserted into the newly created world.
+  - Otherwise:
+    - Client is added to the existing world.
+- When a **Client leaves**:
+  - MembersManager notifies the MotherServer and the MotherServer informs the ChildServer to remove the Client from the game.
+- When a **ChildServer joins**:
+  - MembersManager notifies the MotherServer.
+  - MotherServer registers the ChildServer as available.
+- When a **ChildServer leaves**:
+  - MembersManager notifies the MotherServer.
+  - MotherServer removes the ChildServer from its registry.
+
+#### Backup flow
+
+<!-- TODO -->
+
 ### Behaviour
 
 <!-- - how does _each_ component __behave__ individually (e.g. in _response_ to _events_ or messages)?
@@ -329,6 +365,132 @@ As seen in the class diagrams above, there are a set of classes shared between t
 - which components are in charge of updating the __state__ of the system? _when_? _how_?
 
 > State diagrams are welcome here -->
+
+#### Client Actor
+
+*ClientActor* orchestrates the entire lifecycle of the client-side logic: it initializes the UI, discovers the cluster, requests a game session, and runs a synchronized game loop with the server. It transitions between two main modes:
+
+- **Homepage mode (`viewBehavior`)**: discovery, matchmaking, and session acquisition.
+- **In-game mode (`run`)**: simulation–render–synchronization loop with the Child Server.
+
+It also processes user actions (e.g., JoinRandomRoom) and handles end-of-game transitions.
+
+#### Initialization
+
+When `apply()` is invoked:
+
+- Logs startup and initializes the main View, displaying the status "Offline".
+- Registers itself in the Akka Receptionist under `CLIENT_SERVICE_KEY`.
+- Subscribes to cluster membership events with `JoinNetwork`.
+- Enters Homepage mode by invoking `viewBehavior(view)`.
+
+At this stage, the actor becomes discoverable and begins reacting to cluster state changes.
+
+#### Homepage Mode
+
+In this mode manages all events prior to entering a game session. It may hold an optional reference to the Child Game Manager (`manager: ActorRef[ChildEvent]`).
+
+##### Handled messages
+
+- **`JoinNetwork(MemberUp)`**
+  - Displays "Connecting..." in the UI.
+  - No state change occurs.
+
+- **`GameManagerAddress(managerRef)`**
+  - Indicates that a game manager was discovered.
+  - Updates the UI with "Connected", and transitions to `viewBehavior(view, Some(managerRef))`.
+
+- **`LocalClientEvent.JoinRandomRoom`**
+  - If a manager reference is available, calls `requestWorld(nickName, ctx, manager)`.
+  - If not, updates the UI with "Connecting..." message.
+
+- **`ServiceNotAvailable()`**
+  - Updates the UI with a service-unavailable message.
+
+- **`LocalClientEvent.ReceivedWorld(world, player, managerRef)`**
+  - Indicates successful session acquisition.
+  - Steps performed:
+    - Creates a local world model and player representation.
+    - Initializes `ImmutableGameStateManager` and `LocalView`.
+    - Closes the menu and shows the game view.
+    - Sends an initial `Tick` to itself to start the game loop.
+
+#### Mother Actor
+
+`MotherActor` functions as the central coordinator and matchmaker in the Raga.io distributed architecture. It does not manage gameplay logic directly but is responsible for:
+
+- Tracking all active Child Servers and their states.
+- Managing Client connections and distributing them to available game servers.
+- Handling pending clients when no child servers are available.
+- Managing server registration, deregistration, and fault handling.
+
+The actor operates as a stateful event handler that reacts to cluster events and client lifecycle messages, maintaining a dynamic view of the system through its internal `MotherState`.
+
+##### Initialization
+
+When `apply()` is invoked:
+
+- Logs the startup message and registers the actor in the Akka Receptionist using `MOTHER_SERVICE_KEY`.
+- Spawns the `MembersManager` actor, which monitors the cluster and forwards membership events.
+- Initializes its behaviour with an empty `MotherState`, containing no children and no pending clients.
+
+At this stage, the `MotherActor` is ready to accept and respond to system-level events.
+
+##### Main Behaviour
+
+The actor maintains two key data structures inside `MotherState`:
+
+- `children`: a list of active `ChildState` objects, each representing a connected child server, its assigned clients, and the associated world ID.
+- `pendingClients`: a list of clients waiting for assignment because no child servers are currently available.
+
+The actor transitions through different states purely based on incoming messages:
+
+- **`ClientUp(client)`**
+  - Triggered when a new client joins the network.
+  - Attempts to assign the client to the least-loaded child server using `findFreeChild`.
+    - **If no child server is available:**
+      - Logs the unavailability and replies with `ServiceNotAvailable()` to the client.
+      - Adds the client to `pendingClients` for future assignment.
+    - **If a child server is available:**
+      - Sends `GameManagerAddress(child.ref)` to the client.
+      - Updates the child’s client list to include the new client.
+
+- **`ClientLeft(client)`**
+  - Triggered when a client disconnects or leaves a session.
+  - Removes the client from the assigned child’s client list.
+  - If the client was pending, removes it from `pendingClients`.
+  - If assigned to a child server, notifies that server with `ChildClientLeft(client)`.
+
+- **`ChildServerUp(child)`**
+  - Triggered when a new child server joins the network.
+  - Generates a unique `worldId` using `generateWorldID`.
+  - Sends `SetUp(worldId)` to the new child server to initialize its game session.
+  - Assigns all pending clients to this new server by sending them `GameManagerAddress(child)`.
+  - Adds the new child server to the `children` list with its `worldId` and an empty client list.
+
+- **`ChildServerLeft(child)`**
+  - Triggered when a child server disconnects or fails.
+  - Removes the server from the `children` list.
+  - Clients previously assigned to this server are now orphaned and must reconnect in a future cycle (handled externally by the `MembersManager` and client retry logic).
+
+The `MotherActor` maintains consistent global state by:
+
+- Tracking every active child server and its load (number of connected clients).
+- Keeping a list of pending clients and assigning them immediately when a new child becomes available.
+- Notifying child servers when clients disconnect to prevent orphaned references.
+
+The actor’s state is updated immutably: every behaviour invocation constructs a new `MotherState` copy with the updated lists.
+
+The actor uses a simple least-loaded server selection algorithm to distribute clients:
+
+- `findFreeChild(state)` sorts the list of children by the number of connected clients.
+- The first server in the sorted list (i.e., the one with the fewest clients) is selected.
+
+This ensures even load distribution and minimizes performance bottlenecks across child servers.
+
+#### Child Actor
+
+
 
 ### Data and Consistency Issues
 

@@ -40,6 +40,9 @@
         - [Initialization](#initialization-1)
         - [Main Behaviour](#main-behaviour)
       - [Child Actor](#child-actor)
+        - [Initialization](#initialization-2)
+        - [Main Behaviour](#main-behaviour-1)
+        - [Handled Messages](#handled-messages-1)
     - [Data and Consistency Issues](#data-and-consistency-issues)
     - [Fault-Tolerance](#fault-tolerance)
     - [Availability](#availability)
@@ -490,7 +493,69 @@ This ensures even load distribution and minimizes performance bottlenecks across
 
 #### Child Actor
 
+`ChildActor` is the authoritative game-session host.  
+It owns the **world state** for a single room, handles player joins/leaves, merges client-submitted updates, and broadcasts the authoritative world to all connected clients.  
+It never renders; it only validates/merges state and notifies clients.
 
+##### Initialization
+
+When `apply()` is invoked:
+
+- Logs startup and registers itself in the Akka Receptionist under `CHILD_SERVICE_KEY`.
+- Waits in a lightweight setup state for `SetUp(worldId)`.
+- On `SetUp(worldId)`, it initializes the authoritative **World**
+- Transitions to `work(world, managedPlayers = Map.empty)`.
+
+At this point, the child server is ready to accept clients and process gameplay messages.
+
+##### Main Behaviour
+
+This behaviour maintains two authoritative structures:
+
+- **world**: immutable snapshot of the current game state (id, size, players, foods).
+- **managedPlayers**: map of `playerId → ActorRef[ClientEvent]` used for targeted responses and broadcasts.
+
+##### Handled Messages
+
+- **`RequestWorld(nickName, replyTo, playerRef)`**
+  - Spawns a new player at a random valid position.
+  - Replies with `RemoteWorld(newWorld, newPlayer)` to the requester.
+
+- **`RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef))`**
+  - Merges the client-submitted delta into the authoritative world via `mergeWorlds(oldWorld, updatedWorld, playerId)`:
+    - Keeps all other players from `oldWorld`.
+    - Replaces only the requesting player’s state from `updatedWorld`.
+    - Keeps foods from `updatedWorld` and replenishes items to keep density stable.
+  - After merge:
+    - Broadcasts `ReceivedRemoteWorld(mergedWorld)` to all clients in `managedPlayers`.
+
+- **`ChildClientLeft(clientRef)`**
+  - Resolves `playerId` by reverse lookup on `managedPlayers`.
+  - If found:
+    - Removes player from `managedPlayers` and `world.players`.
+    - Broadcasts `ReceivedRemoteWorld(newWorld)` to remaining clients.
+    - Transitions to `work(newWorld, newManagedPlayers)`.
+
+- **`EatenPlayer(playerId)`**
+  - Removes the eaten player from `world.players`.
+  - Broadcasts `ReceivedRemoteWorld(newWorld)` to all clients.
+  - If the eaten player is tracked in `managedPlayers`, sends `EndGame()` directly to their client; otherwise logs a miss.
+  - Transitions to `work(newWorld, managedPlayers)`.
+
+On merge, the logic is:
+
+- **Players**
+  - Retain all non-requesting players from `oldWorld`.
+  - Take the requesting player’s updated state from `newWorld`.
+- **Foods**
+  - Start from `newWorld.foods` (as observed/consumed client-side).
+  - Replenish with additional randomly generated foods to sustain density:
+    - `extraFoods = generateFoods(INIT_FOOD_NUMBER) minus existing ids`.
+- **Dimensions/ID**
+  - Keep `oldWorld.id` and default dimensions.
+
+Broadcasts of `ReceivedRemoteWorld` are **fanned out** to all `managedPlayers` using a short-lived anonymous actor.  
+This avoids blocking the main child behaviour on per-client messaging and confines the broadcast to a small, stoppable context.
 
 ### Data and Consistency Issues
 

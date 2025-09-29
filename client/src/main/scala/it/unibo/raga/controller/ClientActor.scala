@@ -61,8 +61,9 @@ object ClientActor:
 
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
-    val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(JoinNetwork.apply)
-    cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
+    val memberEventAdapter: ActorRef[ClusterDomainEvent] = ctx.messageAdapter(JoinNetwork.apply)
+    cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[ClusterDomainEvent])
+
     viewBehavior(view)
 
   /** Defines the behavior of the client actor in response to various events while the user is interacting with the

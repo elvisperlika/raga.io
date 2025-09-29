@@ -125,13 +125,12 @@ object MotherActor:
             val updatedChild = child.copy(clients = client :: child.clients)
             val newRooms = state.rooms + (newID -> updatedChild)
 
-            client ! FriendsRoomCreated(newID)
-            client ! GamaManagerAddress(updatedChild.ref)
-
+            client ! FriendsRoomCreated(newID)        
+            client ! GamaManagerAddress(updatedChild.ref) 
             behavior(state.copy(
               children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
               rooms = newRooms
-            ))
+      ))
 
   /** Generate a unique world ID not present in the given list of IDs
     *

@@ -9,7 +9,7 @@ During the preparation of this work, the authors used Chat-GPT and Gemini to
 refine the report by improving sentence structure and correcting grammatical errors.
 After using these tools, the authors reviewed and edited the
 content as needed and takes full responsibility for the content of the
-final report/artifact.
+final report.
 
 ## Abstract
 

@@ -19,7 +19,17 @@
       - [Deployment](#deployment)
       - [Components](#components)
     - [Modelling](#modelling)
+      - [Client](#client)
+        - [Client Model](#client-model)
+        - [Client Controller](#client-controller)
+        - [Client View](#client-view)
+      - [Mother Server](#mother-server)
+      - [Child Server](#child-server)
+      - [Protocol](#protocol)
+      - [Full Diagram](#full-diagram)
     - [Interaction](#interaction)
+      - [Client - Mother Server - Child Server connection and gameplay flow](#client---mother-server---child-server-connection-and-gameplay-flow)
+      - [Mother Server - Child Server flow](#mother-server---child-server-flow)
     - [Behaviour](#behaviour)
     - [Data and Consistency Issues](#data-and-consistency-issues)
     - [Fault-Tolerance](#fault-tolerance)
@@ -168,7 +178,7 @@ This project employs a **client-server architecture** with a distributed system 
 
 The system architecture consists of three main components:
 
-<img src="./images/deployment.png" alt="drawing" width="1000"/>
+![drawing](./images/deployment.png)
 
 - **Client**: The client application is a desktop GUI that players use to interact with the game. It handles user input, renders the game state, and communicates with the servers.
 - **Mother Server**: The Mother Server acts as a central coordinator. It manages game sessions, handles player matchmaking, and distributes players to Child Servers based on load and availability.
@@ -176,7 +186,7 @@ The system architecture consists of three main components:
 
 #### Components
 
-<img src="./images/components.png" alt="drawing" width="1000"/>
+![drawing](./images/components.png)
 
 Client service:
 
@@ -218,12 +228,98 @@ Child Servers can be hosted on different machines or cloud instances to distribu
 
 <!-- > Class diagram are welcome here -->
 
+#### Client
+
+The client, which has a graphical user interface (GUI), is structured according to the **Model-View-Controller (MVC)** architectural pattern, which separates the application into three interconnected components: the Model, the View, and the Controller.
+
+![drawing](./images/client-class.png)
+
+##### Client Model
+
+The Model encapsulates the game logic and state management:
+
+- Entity (interface): A common abstraction implemented by LocalPlayer and LocalFood.
+- LocalPlayer and LocalFood: Entities within the game world.
+- LocalWorld: Represents the game environment, containing multiple players and food objects (composition relation).
+- GameStateManager and ImmutableGameStateManager: Handle the game state. The immutable version provides read-only access to the state.
+- EatingManager: Handles interactions related to eating mechanics between entities.
+- AIMovements: Updates the behavior and movement of AI players, if present.
+
+##### Client Controller
+
+The Controller handles interactions and updates between the model and the view:
+
+- ClientActor: Central controller component managing the game flow and communication with servers.
+- WorldConverter: Used by ClientActor to transform model data into a format suitable for the local computation.
+
+##### Client View
+
+The View presents the game to the user:
+
+- View (interface): General abstraction for different visual components.
+- MenuView, EndGameView, LocalView: Different visual representations of the game’s state (menu, in-game, end screen).
+- AgarViewUtils: Utility functions used by LocalView to draw game elements.
+
+#### Mother Server
+
+![drawing](./images/mother-class.png)
+
+The Mother Server coordinates the main management logic:
+
+- MotherActor: The central actor of the system.
+- MembersManager: Discover Clients and Child Servers that access the system.
+- BackupService: Manage data backup operations.
+- MotherState: Store the Child Servers and pending Clients references.
+- ChildState: Represent the state of a Child Server, including its load and the world's ID managed.
+
+#### Child Server
+
+![drawing](./images/child-class.png)
+
+Child Servers manage individual game sessions and receive players from the Mother Server.
+
+#### Protocol
+
+As seen in the class diagrams above, there are a set of classes shared between the Mother Server and Child Server components. These classes are used to represent the world state of a game session and they are the body of the messages exchanged to synchronize the game state between the servers and the clients and also between the Mother Server and Child Servers. They include:
+
+- Entity (interface): A common abstraction implemented by Player and Food.
+- Player: Represents a player in the game, including attributes like ID, nickname, position and size.
+- Food: Represents a food item in the game, including attributes like ID, position and size.
+- World: Represents the game world, containing multiple players and food objects.
+
+#### Full Diagram
+
+![drawing](./images/full-class.png)
+
 ### Interaction
 
 <!-- - how do components _communicate_? _when_? _what_?
 - _which_ __interaction patterns__ do they enact?
 
 > Sequence diagrams are welcome here -->
+
+#### Client - Mother Server - Child Server connection and gameplay flow
+
+![drawing](./images/interaction1.png)
+
+- When the Client is launched, it tries to connect to the Mother Server.
+- If the Mother Server is not found → the Client remains in *Offline* state.
+- If the Mother Server is found:
+  - If a Child Server is available:
+    - The Mother Server provides the Client with a reference to the Child Server.
+    - The Client requests to join the game through the Child Server.
+    - The Child Server grants access, and the Client state becomes *Connected*.
+  - If no Child Server is available:
+    - The Mother Server informs the Client that no Child is available.
+    - The Client remains in the *Connecting…* state.
+- Once a Child Server is assigned, the Client officially joins the game.
+- During gameplay, for every user input:
+  - The Client sends the input to the Child Server requesting a world update.
+  - The Child Server processes the request and sends back the updated world to the Client.
+
+#### Mother Server - Child Server flow
+
+![drawing](./images/interaction2.png)
 
 ### Behaviour
 

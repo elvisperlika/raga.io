@@ -90,10 +90,8 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
       case `createAndJoinRoomButton` => clientActor ! LocalClientEvent.CreateAndJoinRoom
       case `joinFriendsRoomButton` =>
         val code = roomCodeTextField.text.trim
-        if code.nonEmpty then
-          clientActor ! LocalClientEvent.JoinFriendsRoom(code)
-        else
-          showAlert("Insert a valid room code.")
+        if code.nonEmpty then clientActor ! LocalClientEvent.JoinFriendsRoom(code)
+        else showAlert("Insert a valid room code.")
   }
 
   def getNickname(): String = nicknameTextField.text.trim

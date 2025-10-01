@@ -52,7 +52,7 @@ object ClientActor:
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
     case JoinFriendsRoomFailed(code: String)
-    
+
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self)
@@ -61,8 +61,8 @@ object ClientActor:
 
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
-    val memberEventAdapter: ActorRef[ClusterDomainEvent] = ctx.messageAdapter(JoinNetwork.apply)
-    cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[ClusterDomainEvent])
+    val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(JoinNetwork.apply)
+    cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
 
     viewBehavior(view)
 
@@ -122,7 +122,7 @@ object ClientActor:
               case _ =>
                 view.showAlert("Service Not Available, please wait...")
                 Behaviors.same
-          
+
           case LocalClientEvent.JoinFriendsRoomFailed(code) =>
             view.showAlert(s"Room with code $code not found")
             Behaviors.same
@@ -138,35 +138,7 @@ object ClientActor:
               case None =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
-
-          case FriendsRoomCreated(roomId) =>
-            ctx.log.info(s"🏀 Room created with code: $roomId")
-            view.showAlert(s"Room created! Share this code: $roomId")
-            Behaviors.same
-
-          case JoinNetwork(MemberUp(member)) =>
-            ctx.log.info(s"🏀 Member up: ${member.address}")
-            Behaviors.same
-
-          case JoinNetwork(MemberLeft(member)) =>
-            ctx.log.info(s"⚠️ Member is Leaving: ${member.address}")
-            Behaviors.same
-
-          case JoinNetwork(MemberExited(member)) =>
-            ctx.log.info(s"Member is Exiting: ${member.address}")
-            Behaviors.same
-
-          case JoinNetwork(MemberRemoved(member, previousStatus)) =>
-            ctx.log.info(s"Member is Removed: ${member.address} after $previousStatus")
-            Behaviors.same
-
-          case JoinNetwork(UnreachableMember(member)) =>
-            ctx.log.info(s"Member detected as unreachable: ${member.address}")
-            Behaviors.same
-
-          case JoinNetwork(ReachableMember(member)) =>
-            ctx.log.info(s"Member detected as reachable again: ${member.address}")
-            Behaviors.same
+          case _ => Behaviors.same
 
   private def requestWorld(
       nickName: String,

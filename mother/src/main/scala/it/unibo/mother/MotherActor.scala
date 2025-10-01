@@ -61,10 +61,10 @@ object MotherActor:
       case ChildServerUp(child) =>
         ctx.log.info(s"😍 Child Up: ${child.path}")
         val newID = generateWorldID(state.children.map(_.worldId))
-        child ! SetUp(newID)
+        child ! SetUp(newID, ctx.self)
 
         val newChildState = ChildState(ref = child, worldId = newID)
-        //val newRooms = state.rooms + (newID -> newChildState)
+        // val newRooms = state.rooms + (newID -> newChildState)
 
         state.pendingClients.foreach { client =>
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
@@ -103,10 +103,12 @@ object MotherActor:
 
             client ! GamaManagerAddress(childState.ref)
 
-            behavior(state.copy(
-              children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
-              rooms = updatedRooms
-            ))
+            behavior(
+              state.copy(
+                children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
+                rooms = updatedRooms
+              )
+            )
 
           case None =>
             ctx.log.info(s"😭 Room $roomId not found for client ${client.path}")
@@ -125,12 +127,14 @@ object MotherActor:
             val updatedChild = child.copy(clients = client :: child.clients)
             val newRooms = state.rooms + (newID -> updatedChild)
 
-            client ! FriendsRoomCreated(newID)        
-            client ! GamaManagerAddress(updatedChild.ref) 
-            behavior(state.copy(
-              children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
-              rooms = newRooms
-      ))
+            client ! FriendsRoomCreated(newID)
+            client ! GamaManagerAddress(updatedChild.ref)
+            behavior(
+              state.copy(
+                children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
+                rooms = newRooms
+              )
+            )
 
   /** Generate a unique world ID not present in the given list of IDs
     *

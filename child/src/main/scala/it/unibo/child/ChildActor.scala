@@ -26,6 +26,8 @@ import it.unibo.protocol.SetUp
 import it.unibo.protocol.World
 import it.unibo.protocol.EndGame
 
+import it.unibo.protocol._
+
 object ChildActor:
 
   def apply(): Behavior[ChildEvent] = Behaviors.setup: ctx =>
@@ -33,20 +35,21 @@ object ChildActor:
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CHILD_SERVICE_KEY, ctx.self)
     Behaviors.receiveMessage {
-      case SetUp(worldId) =>
+      case SetUp(worldId, motherRef) =>
         work(
           world = World(
             id = worldId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
             foods = generateFoods(INIT_FOOD_NUMBER)
           ),
-          managedPlayers = Map.empty
+          managedPlayers = Map.empty,
+          motherRef = motherRef
         )
       case _ =>
         ctx.log.warn(s"🤖 Received unexpected message in setup state")
         Behaviors.same
     }
 
-  def work(world: World, managedPlayers: Map[ID, ActorRef[ClientEvent]]): Behavior[ChildEvent] = Behaviors.receive:
+  def work(world: World, managedPlayers: Map[ID, ActorRef[ClientEvent]], motherRef: ActorRef[MotherEvent]): Behavior[ChildEvent] = Behaviors.receive:
     (ctx, msg) =>
       msg match
         case RequestWorld(nickName, replyTo, playerRef) =>
@@ -56,7 +59,7 @@ object ChildActor:
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
           val newWorld = world.copy(players = world.players :+ newPlayer)
           replyTo ! RemoteWorld(newWorld, newPlayer)
-          work(newWorld, managedPlayers + (nickName -> playerRef))
+          work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
         case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
           val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
@@ -66,7 +69,7 @@ object ChildActor:
                 ref ! ReceivedRemoteWorld(mergedWorld)
             Behaviors.stopped
           })
-          work(mergedWorld, managedPlayers)
+          work(mergedWorld, managedPlayers, motherRef)
 
         case ChildClientLeft(client) =>
           val playerId = managedPlayers.find(p => p._2 == client)
@@ -77,11 +80,11 @@ object ChildActor:
               val newWorld = world.copy(players = newWorldPlayers)
               newManagedPlayers.foreach: (_, ref) =>
                 ref ! ReceivedRemoteWorld(newWorld)
-              work(newWorld, newManagedPlayers)
+              work(newWorld, newManagedPlayers, motherRef)
 
             case None =>
               ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
-              work(world, managedPlayers)
+              work(world, managedPlayers, motherRef)
 
         case EatenPlayer(playerId) =>
           val newWorldPlayers = world.players.filterNot(_.id == playerId)
@@ -91,16 +94,17 @@ object ChildActor:
           managedPlayers.find(_._1 == playerId) match
             case Some((_, ref)) => ref ! EndGame()
             case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
-          work(newWorld, managedPlayers)
+          work(newWorld, managedPlayers, motherRef)
 
         case RequestWorldInRoom(nickName, roomCode, replyTo, playerRef) =>
-          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
-          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-          val newWorld = world.copy(players = world.players :+ newPlayer)
-
-          replyTo ! RemoteWorld(newWorld, newPlayer)
-          work(newWorld, managedPlayers + (nickName -> playerRef))
+          if roomCode != world.id then
+            ctx.log.info(s"🤖 Player $nickName tried to join room $roomCode but this is room ${world.id}")
+            replyTo ! RemoteWorld(World("", 0, 0, Seq.empty, Seq.empty), Player("", 0, 0, 0))
+            Behaviors.same
+          else
+            motherRef ! 
+            
+          work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *

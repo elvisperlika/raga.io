@@ -121,6 +121,11 @@ object ChildActor:
             
             work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
+        case PlayerJoinedRoom(nickName, client) =>
+          ctx.log.info(s"🎉 New player $nickName joined this room!")
+          // qui puoi aggiornare lo stato del mondo (aggiungere il player, ecc.)
+          Behaviors.same
+
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *
     * @param oldWorld

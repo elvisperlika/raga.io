@@ -102,6 +102,7 @@ object MotherActor:
             val updatedRooms = state.rooms + (roomId -> updatedChild)
 
             client ! GamaManagerAddress(childState.ref)
+            childState.ref ! PlayerJoinedRoom(nickName, client)
 
             behavior(
               state.copy(

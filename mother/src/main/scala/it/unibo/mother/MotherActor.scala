@@ -94,7 +94,7 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
-      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID) =>
+      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID, nickName: String) =>
         state.rooms.get(roomId) match
           case Some(childState) =>
             ctx.log.info(s"😍 Client ${client.path} joining room $roomId")

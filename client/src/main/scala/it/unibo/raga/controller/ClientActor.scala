@@ -138,6 +138,7 @@ object ClientActor:
               case None =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
+            
           case _ => Behaviors.same
 
   private def requestWorld(

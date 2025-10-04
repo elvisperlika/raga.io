@@ -9,7 +9,10 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.typed.Cluster
+import akka.cluster.typed._
+import akka.cluster.typed.{Cluster, Subscribe}
+import akka.cluster.ClusterEvent._
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.Subscribe
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
@@ -37,6 +40,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.Failure
 import scala.util.Success
+import it.unibo.protocol.*
 
 object ClientActor:
 
@@ -44,9 +48,10 @@ object ClientActor:
 
     case JoinRandomRoom
     case CreateAndJoinRoom
-    case JoinFriendsRoom
+    case JoinFriendsRoom(code: String)
     case Tick
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
+    case JoinFriendsRoomFailed(code: String)
 
   def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
@@ -58,6 +63,7 @@ object ClientActor:
     ctx.system.receptionist ! Receptionist.Register(CLIENT_SERVICE_KEY, ctx.self)
     val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(JoinNetwork.apply)
     cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
+
     viewBehavior(view)
 
   /** Defines the behavior of the client actor in response to various events while the user is interacting with the
@@ -107,9 +113,33 @@ object ClientActor:
             ctx.self ! LocalClientEvent.Tick
             run(model, gameView, localPlayer, managerRef)
 
-          case _ =>
-            ctx.log.info(s"🏀 Message not recognized: $msg")
+          case LocalClientEvent.JoinFriendsRoom(code) =>
+            ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                requestWorldWithRoomCode(nickName, code, ctx, ref)
+              case _ =>
+                view.showAlert("Service Not Available, please wait...")
+                Behaviors.same
+
+          case LocalClientEvent.JoinFriendsRoomFailed(code) =>
+            view.showAlert(s"Room with code $code not found")
             Behaviors.same
+
+          case LocalClientEvent.CreateAndJoinRoom =>
+            ctx.log.info("🏀 Create & Join Room pressed...")
+            val nickName = view.getNickname()
+            manager match
+              case Some(ref) =>
+                // esempio: chiedi al "mother" di creare una stanza
+                ctx.log.info(s"🏀 Asking to create a room for $nickName")
+                ref ! CreateFriendsRoom(ctx.self) // messaggio definito nei MotherEvent
+              case None =>
+                view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
+            
+          case _ => Behaviors.same
 
   private def requestWorld(
       nickName: String,
@@ -126,6 +156,27 @@ object ClientActor:
         ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
       case Failure(ex) =>
         ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+    }
+    Behaviors.same
+
+  private def requestWorldWithRoomCode(
+      nickName: String,
+      roomCode: String,
+      ctx: ActorContext[ClientEvent | LocalClientEvent],
+      manager: ActorRef[ChildEvent]
+  ): Behavior[ClientEvent | LocalClientEvent] =
+    given Timeout = 3.seconds
+    given Scheduler = ctx.system.scheduler
+    given ExecutionContext = ctx.executionContext
+
+    ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
+    manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
+      case Success(remoteWorld) =>
+        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
+      case Failure(ex) =>
+        ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+        // opzionale: puoi mostrare un alert nella view
+        ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
     }
     Behaviors.same
 

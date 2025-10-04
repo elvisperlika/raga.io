@@ -117,6 +117,23 @@ object ChildActor:
 
         case PlayerJoinedRoom(nickName, client) =>
           ctx.log.info(s"🎉 New player $nickName joined this room!")
+          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
+
+          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+
+          val newWorld = world.copy(players = world.players :+ newPlayer)
+          val newManagedPlayers = managedPlayers + (nickName -> client)
+
+          client ! RemoteWorld(newWorld, newPlayer)
+
+          managedPlayers.foreach {
+            case (id, ref) if id != nickName =>
+              ref ! NewPlayerJoined(newPlayer)
+            case _ => 
+          }
+
+          work(newWorld, newManagedPlayers, motherRef)
           Behaviors.same
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.

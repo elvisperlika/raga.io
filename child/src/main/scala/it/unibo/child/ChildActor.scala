@@ -102,28 +102,22 @@ object ChildActor:
             replyTo ! RemoteWorld(World("", 0, 0, Seq.empty, Seq.empty), Player("", 0, 0, 0))
             Behaviors.same
           else
-            // spawn random position
             val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
             val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
             val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
 
-            // aggiorna il world
             val newWorld = world.copy(players = world.players :+ newPlayer)
 
-            // aggiorna la mappa dei player gestiti
             val newManagedPlayers = managedPlayers + (nickName -> playerRef)
 
-            // manda al richiedente il mondo aggiornato e il player
             replyTo ! RemoteWorld(newWorld, newPlayer)
 
-            // notifica alla madre che un player è entrato nella room
             motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
             
             work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
         case PlayerJoinedRoom(nickName, client) =>
           ctx.log.info(s"🎉 New player $nickName joined this room!")
-          // qui puoi aggiornare lo stato del mondo (aggiungere il player, ecc.)
           Behaviors.same
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.

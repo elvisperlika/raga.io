@@ -42,6 +42,8 @@ case class ServiceNotAvailable() extends ClientEvent
 case class EndGame() extends ClientEvent
 case class FriendsRoomCreated(roomId: ID) extends ClientEvent
 case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
+case class NewPlayerJoined(player: Player) extends ClientEvent
+
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 

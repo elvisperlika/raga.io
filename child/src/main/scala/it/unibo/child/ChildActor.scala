@@ -53,7 +53,6 @@ object ChildActor:
     (ctx, msg) =>
       msg match
         case RequestWorld(nickName, replyTo, playerRef) =>
-          // TODO: find empty space in the world to spawn the player
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)

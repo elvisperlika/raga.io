@@ -49,92 +49,117 @@ object ChildActor:
         Behaviors.same
     }
 
-  def work(world: World, managedPlayers: Map[ID, ActorRef[ClientEvent]], motherRef: ActorRef[MotherEvent]): Behavior[ChildEvent] = Behaviors.receive:
-    (ctx, msg) =>
-      msg match
-        case RequestWorld(nickName, replyTo, playerRef) =>
+  def work(
+      world: World,
+      managedPlayers: Map[ID, ActorRef[ClientEvent]],
+      motherRef: ActorRef[MotherEvent]
+  ): Behavior[ChildEvent] = Behaviors.receive: (ctx, msg) =>
+    msg match
+      case RequestWorld(nickName, replyTo, playerRef) =>
+        val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+        val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
+        val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+        val newWorld = world.copy(players = world.players :+ newPlayer)
+        replyTo ! RemoteWorld(newWorld, newPlayer)
+        work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
+
+      case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
+        val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
+        ctx.spawnAnonymous(Behaviors.setup[Nothing] { anonymousCtx =>
+          if managedPlayers.nonEmpty then
+            managedPlayers.foreach: (_, ref) =>
+              ref ! ReceivedRemoteWorld(mergedWorld)
+          Behaviors.stopped
+        })
+        work(mergedWorld, managedPlayers, motherRef)
+
+      case ChildClientLeft(client) =>
+        val playerId = managedPlayers.find(p => p._2 == client)
+        playerId match
+          case Some(player) =>
+            val newManagedPlayers = managedPlayers.filterNot(_._1 == player._1)
+            val newWorldPlayers = world.players.filterNot(_.id == player._1)
+            val newWorld = world.copy(players = newWorldPlayers)
+            newManagedPlayers.foreach: (_, ref) =>
+              ref ! ReceivedRemoteWorld(newWorld)
+            work(newWorld, newManagedPlayers, motherRef)
+
+          case None =>
+            ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
+            work(world, managedPlayers, motherRef)
+
+      case EatenPlayer(playerId) =>
+        val newWorldPlayers = world.players.filterNot(_.id == playerId)
+        val newWorld = world.copy(players = newWorldPlayers)
+        managedPlayers.foreach: (_, ref) =>
+          ref ! ReceivedRemoteWorld(newWorld)
+        managedPlayers.find(_._1 == playerId) match
+          case Some((_, ref)) => ref ! EndGame()
+          case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
+        work(newWorld, managedPlayers, motherRef)
+
+      case RequestWorldInRoom(nickName, roomCode, replyTo, playerRef) =>
+        if roomCode != world.id then
+          ctx.log.info(s"🤖 Player $nickName tried to join room $roomCode but this is room ${world.id}")
+          replyTo ! RemoteWorld(World("", 0, 0, Seq.empty, Seq.empty), Player("", 0, 0, 0))
+          Behaviors.same
+        else
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+
           val newWorld = world.copy(players = world.players :+ newPlayer)
+
+          val newManagedPlayers = managedPlayers + (nickName -> playerRef)
+
           replyTo ! RemoteWorld(newWorld, newPlayer)
+
+          motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
+
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
-        case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
-          val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
-          ctx.spawnAnonymous(Behaviors.setup[Nothing] { anonymousCtx =>
-            if managedPlayers.nonEmpty then
-              managedPlayers.foreach: (_, ref) =>
-                ref ! ReceivedRemoteWorld(mergedWorld)
-            Behaviors.stopped
-          })
-          work(mergedWorld, managedPlayers, motherRef)
+      case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
+        ctx.log.info(s"🏠 Creating a new friends room on this child actor")
 
-        case ChildClientLeft(client) =>
-          val playerId = managedPlayers.find(p => p._2 == client)
-          playerId match
-            case Some(player) =>
-              val newManagedPlayers = managedPlayers.filterNot(_._1 == player._1)
-              val newWorldPlayers = world.players.filterNot(_.id == player._1)
-              val newWorld = world.copy(players = newWorldPlayers)
-              newManagedPlayers.foreach: (_, ref) =>
-                ref ! ReceivedRemoteWorld(newWorld)
-              work(newWorld, newManagedPlayers, motherRef)
+        val roomId = java.util.UUID.randomUUID().toString.take(6)
 
-            case None =>
-              ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
-              work(world, managedPlayers, motherRef)
+        val newWorld = World(
+          id = roomId,
+          width = DEFAULT_WORLD_WIDTH,
+          height = DEFAULT_WORLD_HEIGHT,
+          players = Seq.empty,
+          foods = generateFoods(INIT_FOOD_NUMBER)
+        )
+        client ! FriendsRoomCreated(roomId)
+        client ! InitWorld(newWorld, Player("", 0, 0, 0)) 
+        client ! GamaManagerAddress(ctx.self)
 
-        case EatenPlayer(playerId) =>
-          val newWorldPlayers = world.players.filterNot(_.id == playerId)
-          val newWorld = world.copy(players = newWorldPlayers)
-          managedPlayers.foreach: (_, ref) =>
-            ref ! ReceivedRemoteWorld(newWorld)
-          managedPlayers.find(_._1 == playerId) match
-            case Some((_, ref)) => ref ! EndGame()
-            case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
-          work(newWorld, managedPlayers, motherRef)
+        motherRef ! RoomCreated(roomId, ctx.self, client)
+        
+        work(newWorld, Map.empty, motherRef)
 
-        case RequestWorldInRoom(nickName, roomCode, replyTo, playerRef) =>
-          if roomCode != world.id then
-            ctx.log.info(s"🤖 Player $nickName tried to join room $roomCode but this is room ${world.id}")
-            replyTo ! RemoteWorld(World("", 0, 0, Seq.empty, Seq.empty), Player("", 0, 0, 0))
-            Behaviors.same
-          else
-            val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
-            val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-            val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
+      case PlayerJoinedRoom(nickName, client) =>
+        ctx.log.info(s"🎉 New player $nickName joined this room!")
+        val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
+        val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
 
-            val newWorld = world.copy(players = world.players :+ newPlayer)
+        val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
 
-            val newManagedPlayers = managedPlayers + (nickName -> playerRef)
+        val newWorld = world.copy(players = world.players :+ newPlayer)
+        val newManagedPlayers = managedPlayers + (nickName -> client)
 
-            replyTo ! RemoteWorld(newWorld, newPlayer)
+        // invio al nuovo arrivato lo stato del mondo
+        client ! InitWorld(newWorld, newPlayer)
 
-            motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
-            
-            work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
+        // invio agli altri client il nuovo player
+        managedPlayers.foreach {
+          case (id, ref) if id != nickName =>
+            ref ! NewPlayerJoined(newPlayer)
+          case _ =>
+        }
 
-        case PlayerJoinedRoom(nickName, client) =>
-          ctx.log.info(s"🎉 New player $nickName joined this room!")
-          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
-          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-
-          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-
-          val newWorld = world.copy(players = world.players :+ newPlayer)
-          val newManagedPlayers = managedPlayers + (nickName -> client)
-
-          client ! RemoteWorld(newWorld, newPlayer)
-
-          managedPlayers.foreach {
-            case (id, ref) if id != nickName =>
-              ref ! NewPlayerJoined(newPlayer)
-            case _ => 
-          }
-
-          work(newWorld, newManagedPlayers, motherRef)
-          Behaviors.same
+        work(newWorld, newManagedPlayers, motherRef)
+        Behaviors.same
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *

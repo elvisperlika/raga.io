@@ -10,7 +10,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed._
-import akka.cluster.typed.{Cluster, Subscribe}
+import akka.cluster.typed.Cluster
+import akka.cluster.typed.Subscribe
 import akka.cluster.ClusterEvent._
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.Subscribe
@@ -138,7 +139,7 @@ object ClientActor:
               case None =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
-            
+
           case _ => Behaviors.same
 
   private def requestWorld(

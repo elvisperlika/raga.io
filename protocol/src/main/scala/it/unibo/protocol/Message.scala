@@ -29,7 +29,6 @@ case class EatenPlayer(id: ID) extends ChildEvent
 case class CreateFriendsRoom(client: ActorRef[ClientEvent]) extends ChildEvent
 case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 
-
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
 trait ClientEvent extends Message
@@ -45,7 +44,6 @@ case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 case class NewPlayerJoined(player: Player) extends ClientEvent
 case class InitWorld(world: World, player: Player) extends ClientEvent
 
-
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
 trait MotherEvent extends Message
@@ -55,6 +53,7 @@ case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
 case class JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID, nickName: String) extends MotherEvent
+case class RoomCreated(roomId: ID, childRef: ActorRef[ChildEvent], owner: ActorRef[ClientEvent]) extends MotherEvent
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */
 

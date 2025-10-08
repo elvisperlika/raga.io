@@ -118,8 +118,9 @@ object ChildActor:
 
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
-      case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
-        ctx.log.info(s"🏠 Creating a new friends room on this child actor")
+      case CreateFriendsRoom(client, roomId) =>
+        ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
+
 
         val roomId = java.util.UUID.randomUUID().toString.take(6)
 

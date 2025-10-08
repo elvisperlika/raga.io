@@ -119,23 +119,36 @@ object MotherActor:
       case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
         findFreeChild(state) match
           case None =>
+            ctx.log.info("😭 No available child servers to create a friends room.")
             client ! ServiceNotAvailable()
             Behaviors.same
+
           case Some(child) =>
-            val newID = generateWorldID(state.rooms.keys.toSeq)
-            ctx.log.info(s"😍 Creating friends room $newID on ${child.ref.path}")
+            ctx.log.info(s"😍 Asking ${child.ref.path.name} to create a friends room for ${client.path.name}")
 
+            child.ref ! CreateFriendsRoom(client)
             val updatedChild = child.copy(clients = client :: child.clients)
-            val newRooms = state.rooms + (newID -> updatedChild)
+            val updatedChildren = state.children.map(c => if c.ref == child.ref then updatedChild else c)
 
-            client ! FriendsRoomCreated(newID)
-            client ! GamaManagerAddress(updatedChild.ref)
-            behavior(
-              state.copy(
-                children = state.children.map(c => if c.ref == child.ref then updatedChild else c),
-                rooms = newRooms
-              )
-            )
+            behavior(state.copy(children = updatedChildren))
+
+      case RoomCreated(roomId, childRef, owner) =>
+        ctx.log.info(s"😍 Room $roomId created by ${childRef.path}, owner ${owner.path}")
+
+        val updatedChildren = state.children.map { c =>
+          if c.ref == childRef then c.copy(clients = owner :: c.clients) else c
+        }
+
+        val newChildStateOpt = updatedChildren.find(_.ref == childRef)
+        val updatedRooms = newChildStateOpt match
+          case Some(cs) => state.rooms + (roomId -> cs)
+          case None     => state.rooms
+
+        owner ! FriendsRoomCreated(roomId)
+        owner ! GamaManagerAddress(childRef)
+
+        behavior(state.copy(children = updatedChildren, rooms = updatedRooms))
+
 
   /** Generate a unique world ID not present in the given list of IDs
     *

@@ -26,7 +26,7 @@ case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends Chi
 case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent]) extends ChildEvent
 case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 case class EatenPlayer(id: ID) extends ChildEvent
-case class CreateFriendsRoom(client: ActorRef[ClientEvent]) extends ChildEvent
+case class CreateFriendsRoom(client: ActorRef[ClientEvent], roomId: ID) extends ChildEvent
 case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */

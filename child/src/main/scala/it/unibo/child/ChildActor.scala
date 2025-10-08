@@ -124,18 +124,15 @@ object ChildActor:
         val roomId = java.util.UUID.randomUUID().toString.take(6)
 
         val newWorld = World(
-          id = roomId,
-          width = DEFAULT_WORLD_WIDTH,
-          height = DEFAULT_WORLD_HEIGHT,
-          players = Seq.empty,
+          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
         client ! FriendsRoomCreated(roomId)
-        client ! InitWorld(newWorld, Player("", 0, 0, 0)) 
+        client ! InitWorld(newWorld, Player("", 0, 0, 0))
         client ! GamaManagerAddress(ctx.self)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
-        
+
         work(newWorld, Map.empty, motherRef)
 
       case PlayerJoinedRoom(nickName, client) =>

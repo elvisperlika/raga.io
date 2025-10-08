@@ -123,15 +123,22 @@ object ChildActor:
         ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
 
         val newWorld = World(
-          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
+          id = roomId, 
+          width = DEFAULT_WORLD_WIDTH, 
+          height = DEFAULT_WORLD_HEIGHT, 
+          players = Seq.empty,
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
-        client ! InitWorld(newWorld, Player("", 0, 0, 0))
-        client ! GamaManagerAddress(ctx.self)
+
+        val dummyPlayer = Player("owner", 0, 0, 0)
+        client ! InitWorld(newWorld, dummyPlayer)
+
+        client ! GameManagerAddress(ctx.self)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
 
         work(newWorld, Map.empty, motherRef)
+
 
       case PlayerJoinedRoom(nickName, client) =>
         ctx.log.info(s"🎉 New player $nickName joined this room!")

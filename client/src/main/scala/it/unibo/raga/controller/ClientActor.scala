@@ -17,7 +17,7 @@ import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.EatenPlayer
 import it.unibo.protocol.EndGame
-import it.unibo.protocol.GamaManagerAddress
+import it.unibo.protocol.GameManagerAddress
 import it.unibo.protocol.JoinNetwork
 import it.unibo.protocol.Player
 import it.unibo.protocol.ReceivedRemoteWorld
@@ -90,7 +90,7 @@ object ClientActor:
                 view.showAlert("Service Not Available, please wait...")
                 Behaviors.same
 
-          case GamaManagerAddress(managerRef) =>
+          case GameManagerAddress(managerRef) =>
             ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
             view.showAlert("Connected")
 

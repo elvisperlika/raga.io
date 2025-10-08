@@ -11,7 +11,7 @@ import it.unibo.protocol.ChildServerUp
 import it.unibo.protocol.ClientEvent
 import it.unibo.protocol.ClientLeft
 import it.unibo.protocol.ClientUp
-import it.unibo.protocol.GamaManagerAddress
+import it.unibo.protocol.GameManagerAddress
 import it.unibo.protocol.ID
 import it.unibo.protocol.MotherEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
@@ -51,7 +51,7 @@ object MotherActor:
             behavior(state.copy(pendingClients = client :: state.pendingClients))
           case Some(child) =>
             ctx.log.info(s"😍 Assigning child server ${child.ref.path} to client ${client.path}")
-            client ! GamaManagerAddress(child.ref)
+            client ! GameManagerAddress(child.ref)
             val updatedChildren = state.children.map { child =>
               if freeChild.contains(child) then child.copy(clients = client :: child.clients)
               else child
@@ -68,7 +68,7 @@ object MotherActor:
 
         state.pendingClients.foreach { client =>
           ctx.log.info(s"😍 Assigning child server ${child.path} to pending client ${client.path}")
-          client ! GamaManagerAddress(child)
+          client ! GameManagerAddress(child)
         }
         behavior(state.copy(children = ChildState(ref = child, worldId = newID) :: state.children))
 
@@ -101,7 +101,7 @@ object MotherActor:
             val updatedChild = childState.copy(clients = client :: childState.clients)
             val updatedRooms = state.rooms + (roomId -> updatedChild)
 
-            client ! GamaManagerAddress(childState.ref)
+            client ! GameManagerAddress(childState.ref)
             childState.ref ! PlayerJoinedRoom(nickName, client)
 
             behavior(
@@ -145,7 +145,7 @@ object MotherActor:
           case None => state.rooms
 
         owner ! FriendsRoomCreated(roomId)
-        owner ! GamaManagerAddress(childRef)
+        owner ! GameManagerAddress(childRef)
 
         behavior(state.copy(children = updatedChildren, rooms = updatedRooms))
 

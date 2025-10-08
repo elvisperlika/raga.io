@@ -10,11 +10,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed._
-import akka.cluster.typed.Cluster
-import akka.cluster.typed.Subscribe
 import akka.cluster.ClusterEvent._
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.typed.Subscribe
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
@@ -101,7 +98,7 @@ object ClientActor:
             ctx.log.info(s"🙋 Joining room as player: $nickName")
 
             managerRef ! PlayerJoinedRoom(nickName, ctx.self)
-            
+
             viewBehavior(view, Some(managerRef))
 
           case ServiceNotAvailable() =>
@@ -140,7 +137,7 @@ object ClientActor:
             manager match
               case Some(ref) =>
                 ctx.log.info(s"🏀 Asking to create a room for $nickName")
-                ref ! CreateFriendsRoom(ctx.self) 
+                ref ! CreateFriendsRoom(ctx.self)
               case None =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same

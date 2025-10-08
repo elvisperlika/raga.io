@@ -142,13 +142,12 @@ object MotherActor:
         val newChildStateOpt = updatedChildren.find(_.ref == childRef)
         val updatedRooms = newChildStateOpt match
           case Some(cs) => state.rooms + (roomId -> cs)
-          case None     => state.rooms
+          case None => state.rooms
 
         owner ! FriendsRoomCreated(roomId)
         owner ! GamaManagerAddress(childRef)
 
         behavior(state.copy(children = updatedChildren, rooms = updatedRooms))
-
 
   /** Generate a unique world ID not present in the given list of IDs
     *

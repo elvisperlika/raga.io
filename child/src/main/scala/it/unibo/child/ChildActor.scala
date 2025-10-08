@@ -123,10 +123,7 @@ object ChildActor:
         ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
 
         val newWorld = World(
-          id = roomId, 
-          width = DEFAULT_WORLD_WIDTH, 
-          height = DEFAULT_WORLD_HEIGHT, 
-          players = Seq.empty,
+          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
         client ! InitWorld(newWorld, Player("", 0, 0, 0))

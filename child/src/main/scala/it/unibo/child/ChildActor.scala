@@ -118,17 +118,17 @@ object ChildActor:
 
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
-      case CreateFriendsRoom(client, roomId) =>
+      case CreateFriendsRoom(client) =>
+        val roomId = java.util.UUID.randomUUID().toString.take(6)
         ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
 
-
-        val roomId = java.util.UUID.randomUUID().toString.take(6)
-
         val newWorld = World(
-          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
+          id = roomId, 
+          width = DEFAULT_WORLD_WIDTH, 
+          height = DEFAULT_WORLD_HEIGHT, 
+          players = Seq.empty,
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
-        client ! FriendsRoomCreated(roomId)
         client ! InitWorld(newWorld, Player("", 0, 0, 0))
         client ! GamaManagerAddress(ctx.self)
 

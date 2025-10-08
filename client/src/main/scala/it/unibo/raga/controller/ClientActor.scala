@@ -96,6 +96,12 @@ object ClientActor:
           case GamaManagerAddress(managerRef) =>
             ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
             view.showAlert("Connected")
+
+            val nickName = view.getNickname()
+            ctx.log.info(s"🙋 Joining room as player: $nickName")
+
+            managerRef ! PlayerJoinedRoom(nickName, ctx.self)
+            
             viewBehavior(view, Some(managerRef))
 
           case ServiceNotAvailable() =>
@@ -133,11 +139,14 @@ object ClientActor:
             val nickName = view.getNickname()
             manager match
               case Some(ref) =>
-                // esempio: chiedi al "mother" di creare una stanza
                 ctx.log.info(s"🏀 Asking to create a room for $nickName")
-                ref ! CreateFriendsRoom(ctx.self) // messaggio definito nei MotherEvent
+                ref ! CreateFriendsRoom(ctx.self) 
               case None =>
                 view.showAlert("Service Not Available, please wait...")
+            Behaviors.same
+
+          case InitWorld(world, player) =>
+            ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
             Behaviors.same
 
           case _ => Behaviors.same

@@ -11,7 +11,6 @@ import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.typed._
 import akka.cluster.ClusterEvent._
-import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import it.unibo.protocol.ChildEvent
 import it.unibo.protocol.ClientEvent
@@ -96,9 +95,7 @@ object ClientActor:
 
             val nickName = view.getNickname()
             ctx.log.info(s"🙋 Joining room as player: $nickName")
-
             managerRef ! PlayerJoinedRoom(nickName, ctx.self)
-
             viewBehavior(view, Some(managerRef))
 
           case ServiceNotAvailable() =>
@@ -144,7 +141,17 @@ object ClientActor:
 
           case InitWorld(world, player) =>
             ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
-            Behaviors.same
+
+            val localWorld = createLocalWorld(world)
+            val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
+            val model = new ImmutableGameStateManager(localWorld)
+            val gameView = new LocalView(model.world, player.id, ctx.self)
+            gameView.setLocationRelativeTo(view)
+            gameView.visible = true
+            view.close()
+
+            ctx.self ! LocalClientEvent.Tick
+            run(model, gameView, localPlayer, manager.get)
 
           case _ => Behaviors.same
 
@@ -182,7 +189,6 @@ object ClientActor:
         ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
       case Failure(ex) =>
         ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
-        // opzionale: puoi mostrare un alert nella view
         ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
     }
     Behaviors.same

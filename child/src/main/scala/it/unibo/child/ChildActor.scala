@@ -123,14 +123,12 @@ object ChildActor:
         ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
 
         val newWorld = World(
-          id = roomId, 
-          width = DEFAULT_WORLD_WIDTH, 
-          height = DEFAULT_WORLD_HEIGHT, 
-          players = Seq.empty,
+          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
 
-        val dummyPlayer = Player("owner", 0, 0, 0)
+        val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
+
         client ! InitWorld(newWorld, dummyPlayer)
 
         client ! GameManagerAddress(ctx.self)
@@ -138,7 +136,6 @@ object ChildActor:
         motherRef ! RoomCreated(roomId, ctx.self, client)
 
         work(newWorld, Map.empty, motherRef)
-
 
       case PlayerJoinedRoom(nickName, client) =>
         ctx.log.info(s"🎉 New player $nickName joined this room!")
@@ -150,10 +147,8 @@ object ChildActor:
         val newWorld = world.copy(players = world.players :+ newPlayer)
         val newManagedPlayers = managedPlayers + (nickName -> client)
 
-        // invio al nuovo arrivato lo stato del mondo
         client ! InitWorld(newWorld, newPlayer)
 
-        // invio agli altri client il nuovo player
         managedPlayers.foreach {
           case (id, ref) if id != nickName =>
             ref ! NewPlayerJoined(newPlayer)

@@ -127,11 +127,10 @@ object ChildActor:
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
 
-        val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
+        // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
 
-        client ! InitWorld(newWorld, dummyPlayer)
-
-        client ! GameManagerAddress(ctx.self)
+        //client ! GameManagerAddress(ctx.self)
+        // client ! InitWorld(newWorld, dummyPlayer)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
 
@@ -156,7 +155,6 @@ object ChildActor:
         }
 
         work(newWorld, newManagedPlayers, motherRef)
-        Behaviors.same
 
   /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
     *

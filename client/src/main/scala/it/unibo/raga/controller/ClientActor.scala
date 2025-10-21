@@ -93,9 +93,9 @@ object ClientActor:
             ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
             view.showAlert("Connected")
 
-            val nickName = view.getNickname()
-            ctx.log.info(s"🙋 Joining room as player: $nickName")
-            managerRef ! PlayerJoinedRoom(nickName, ctx.self)
+            //val nickName = view.getNickname()
+            //ctx.log.info(s"🙋 Joining room as player: $nickName")
+            //managerRef ! PlayerJoinedRoom(nickName, ctx.self)
             viewBehavior(view, Some(managerRef))
 
           case ServiceNotAvailable() =>

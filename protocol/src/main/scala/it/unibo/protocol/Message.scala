@@ -42,7 +42,7 @@ case class EndGame() extends ClientEvent
 case class FriendsRoomCreated(roomId: ID) extends ClientEvent
 case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 case class NewPlayerJoined(player: Player) extends ClientEvent
-case class InitWorld(world: World, player: Player) extends ClientEvent
+case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent]) extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 

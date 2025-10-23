@@ -129,7 +129,7 @@ object ChildActor:
 
         // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
 
-        //client ! GameManagerAddress(ctx.self)
+        // client ! GameManagerAddress(ctx.self)
         // client ! InitWorld(newWorld, dummyPlayer)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)

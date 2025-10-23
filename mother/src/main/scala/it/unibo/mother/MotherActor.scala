@@ -144,7 +144,6 @@ object MotherActor:
           case Some(cs) => state.rooms + (roomId -> cs)
           case None => state.rooms
 
-        
         owner ! GameManagerAddress(childRef)
         owner ! FriendsRoomCreated(roomId)
 

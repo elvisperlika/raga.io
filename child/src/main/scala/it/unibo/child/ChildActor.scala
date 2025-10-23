@@ -127,10 +127,17 @@ object ChildActor:
           foods = generateFoods(INIT_FOOD_NUMBER)
         )
 
-        // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
+        val ownerNick = "owner" // puoi sostituire con nickname passato, se lo hai
+        val randX = scala.util.Random.nextDouble() * (newWorld.width - DEFAULT_PLAYER_SIZE)
+        val randY = scala.util.Random.nextDouble() * (newWorld.height - DEFAULT_PLAYER_SIZE)
+        val ownerPlayer = Player(ownerNick, randX, randY, DEFAULT_PLAYER_SIZE)
 
-        // client ! GameManagerAddress(ctx.self)
-        // client ! InitWorld(newWorld, dummyPlayer)
+        val updatedWorld = newWorld.copy(players = Seq(ownerPlayer))
+        val updatedManagedPlayers = Map(ownerNick -> client)
+
+              // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
+        client ! GameManagerAddress(ctx.self)
+        client ! InitWorld(updatedWorld, ownerPlayer)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
 

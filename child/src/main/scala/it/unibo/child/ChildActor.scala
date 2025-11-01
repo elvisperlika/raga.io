@@ -137,12 +137,9 @@ object ChildActor:
 
         // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
         client ! InitWorld(updatedWorld, ownerPlayer, ctx.self)
-        //client ! GameManagerAddress(ctx.self)
-        //lient ! InitWorld(updatedWorld, ownerPlayer)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
-
-        work(newWorld, Map.empty, motherRef)
+        work(updatedWorld, updatedManagedPlayers, motherRef)
 
       case PlayerJoinedRoom(nickName, client) =>
         ctx.log.info(s"🎉 New player $nickName joined this room!")

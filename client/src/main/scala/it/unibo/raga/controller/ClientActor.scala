@@ -151,7 +151,7 @@ object ClientActor:
             view.close()
 
             ctx.self ! LocalClientEvent.Tick
-            run(model, gameView, localPlayer, manager.get)
+            run(model, gameView, localPlayer, managerRef)
 
           case _ => Behaviors.same
 

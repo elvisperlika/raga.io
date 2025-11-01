@@ -135,9 +135,10 @@ object ChildActor:
         val updatedWorld = newWorld.copy(players = Seq(ownerPlayer))
         val updatedManagedPlayers = Map(ownerNick -> client)
 
-              // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
-        client ! GameManagerAddress(ctx.self)
-        client ! InitWorld(updatedWorld, ownerPlayer)
+        // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
+        client ! InitWorld(updatedWorld, ownerPlayer, ctx.self)
+        //client ! GameManagerAddress(ctx.self)
+        //lient ! InitWorld(updatedWorld, ownerPlayer)
 
         motherRef ! RoomCreated(roomId, ctx.self, client)
 
@@ -153,7 +154,7 @@ object ChildActor:
         val newWorld = world.copy(players = world.players :+ newPlayer)
         val newManagedPlayers = managedPlayers + (nickName -> client)
 
-        client ! InitWorld(newWorld, newPlayer)
+        client ! InitWorld(newWorld, newPlayer, ctx.self)
 
         managedPlayers.foreach {
           case (id, ref) if id != nickName =>

@@ -139,7 +139,7 @@ object ClientActor:
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
 
-          case InitWorld(world, player) =>
+          case InitWorld(world, player, managerRef) =>
             ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
 
             val localWorld = createLocalWorld(world)

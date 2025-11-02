@@ -116,7 +116,7 @@ object MotherActor:
             client ! JoinFriendsRoomFailed(roomId)
             Behaviors.same
 
-      case CreateFriendsRoom(client: ActorRef[ClientEvent]) =>
+      case CreateFriendsRoom(nickName, client) =>
         findFreeChild(state) match
           case None =>
             ctx.log.info("😭 No available child servers to create a friends room.")
@@ -124,9 +124,9 @@ object MotherActor:
             Behaviors.same
 
           case Some(child) =>
-            ctx.log.info(s"😍 Asking ${child.ref.path.name} to create a friends room for ${client.path.name}")
+            ctx.log.info(s"😍 Asking ${child.ref.path.name} to create a friends room for $nickName (${client.path.name})")
 
-            child.ref ! CreateFriendsRoom(client)
+            child.ref ! CreateFriendsRoom(nickName,client)
             val updatedChild = child.copy(clients = client :: child.clients)
             val updatedChildren = state.children.map(c => if c.ref == child.ref then updatedChild else c)
 

@@ -134,7 +134,7 @@ object ClientActor:
             manager match
               case Some(ref) =>
                 ctx.log.info(s"🏀 Asking to create a room for $nickName")
-                ref ! CreateFriendsRoom(ctx.self)
+                ref ! CreateFriendsRoom(nickName, ctx.self)
               case None =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same

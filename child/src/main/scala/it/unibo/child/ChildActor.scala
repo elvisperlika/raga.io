@@ -118,9 +118,9 @@ object ChildActor:
 
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
-      case CreateFriendsRoom(client) =>
+      case CreateFriendsRoom(nickName, client) =>
         val roomId = java.util.UUID.randomUUID().toString.take(6)
-        ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for ${client.path}")
+        ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for $nickName (${client.path})")
 
         val newWorld = World(
           id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
@@ -130,10 +130,10 @@ object ChildActor:
         val ownerNick = "owner"
         val randX = scala.util.Random.nextDouble() * (newWorld.width - DEFAULT_PLAYER_SIZE)
         val randY = scala.util.Random.nextDouble() * (newWorld.height - DEFAULT_PLAYER_SIZE)
-        val ownerPlayer = Player(ownerNick, randX, randY, DEFAULT_PLAYER_SIZE)
+        val ownerPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
 
         val updatedWorld = newWorld.copy(players = Seq(ownerPlayer))
-        val updatedManagedPlayers = Map(ownerNick -> client)
+        val updatedManagedPlayers = Map(nickName -> client)
 
         // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
         client ! InitWorld(updatedWorld, ownerPlayer, ctx.self)

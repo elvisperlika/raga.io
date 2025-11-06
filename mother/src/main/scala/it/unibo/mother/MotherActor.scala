@@ -124,9 +124,11 @@ object MotherActor:
             Behaviors.same
 
           case Some(child) =>
-            ctx.log.info(s"😍 Asking ${child.ref.path.name} to create a friends room for $nickName (${client.path.name})")
+            ctx.log.info(
+              s"😍 Asking ${child.ref.path.name} to create a friends room for $nickName (${client.path.name})"
+            )
 
-            child.ref ! CreateFriendsRoom(nickName,client)
+            child.ref ! CreateFriendsRoom(nickName, client)
             val updatedChild = child.copy(clients = client :: child.clients)
             val updatedChildren = state.children.map(c => if c.ref == child.ref then updatedChild else c)
 

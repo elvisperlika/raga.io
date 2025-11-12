@@ -13,6 +13,7 @@ import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
 import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
+import akka.actor.typed.scaladsl.AskPattern.*
 import it.unibo.protocol.EatenPlayer
 import it.unibo.protocol.Food
 import it.unibo.protocol.ID
@@ -25,8 +26,14 @@ import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.SetUp
 import it.unibo.protocol.World
 import it.unibo.protocol.EndGame
+import scala.concurrent.duration.DurationInt
 
 import it.unibo.protocol._
+import akka.util.Timeout
+import akka.actor.typed.Scheduler
+import scala.concurrent.ExecutionContext
+import scala.util.Success
+import scala.util.Failure
 
 object ChildActor:
 
@@ -98,25 +105,39 @@ object ChildActor:
           case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
         work(newWorld, managedPlayers, motherRef)
 
-      case RequestWorldInRoom(nickName, roomCode, replyTo, playerRef) =>
-        if roomCode != world.id then
+      case RequestWorldInRoom(nickName, roomCode, clientReplyTo, playerRef) =>
+        if roomCode == world.id then
           ctx.log.info(s"🤖 Player $nickName tried to join room $roomCode but this is room ${world.id}")
-          replyTo ! RemoteWorld(World("", 0, 0, Seq.empty, Seq.empty), Player("", 0, 0, 0))
-          Behaviors.same
-        else
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-
           val newWorld = world.copy(players = world.players :+ newPlayer)
-
-          val newManagedPlayers = managedPlayers + (nickName -> playerRef)
-
-          replyTo ! RemoteWorld(newWorld, newPlayer)
-
-          motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
-
+          clientReplyTo ! (ctx.self, RemoteWorld(newWorld, Player(nickName, 0, 0, 0)))
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
+        else
+          ctx.log.info(s"🤖 Player $nickName joining room $roomCode from room ${world.id}")
+          given Timeout = 3.seconds
+          given Scheduler = ctx.system.scheduler
+          given ExecutionContext = ctx.executionContext
+          // motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
+          motherRef
+            .ask[Boolean](childReplyTo =>
+              JoinFriendsRoom(playerRef, roomCode, nickName, childReplyTo)
+            )
+            .onComplete {
+              case Success(true) =>
+                var managedPlayersUpdated = managedPlayers.removed(nickName)
+                work(world, managedPlayersUpdated, motherRef)
+              case Failure(ex) =>
+                ctx.log.error(s"🤖Failed to join friends room: ${ex.getMessage}", ex)
+                clientReplyTo ! CodeNotFound()
+                work(world, managedPlayers, motherRef)
+              case Success(false) =>
+                ctx.log.error(s"🤖Failed to join friends room")
+                clientReplyTo ! CodeNotFound()
+                work(world, managedPlayers, motherRef)
+            }
+          Behaviors.same
 
       case CreateFriendsRoom(nickName, client) =>
         val roomId = java.util.UUID.randomUUID().toString.take(6)

@@ -94,15 +94,15 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
-      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID, nickName: String) =>
+      case JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID, nickName: String, replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld)]) =>
         state.rooms.get(roomId) match
           case Some(childState) =>
             ctx.log.info(s"😍 Client ${client.path} joining room $roomId")
             val updatedChild = childState.copy(clients = client :: childState.clients)
             val updatedRooms = state.rooms + (roomId -> updatedChild)
-
             client ! GameManagerAddress(childState.ref)
             childState.ref ! PlayerJoinedRoom(nickName, client)
+            replyTo ! true
 
             behavior(
               state.copy(

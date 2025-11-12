@@ -18,7 +18,7 @@ case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], player
 case class RequestWorldInRoom(
     nickName: ID,
     roomCode: RoomCode,
-    replyTo: ActorRef[RemoteWorld],
+    replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld) | CodeNotFound],
     playerRef: ActorRef[ClientEvent]
 ) extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
@@ -43,6 +43,7 @@ case class FriendsRoomCreated(roomId: ID) extends ClientEvent
 case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 case class NewPlayerJoined(player: Player) extends ClientEvent
 case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent]) extends ClientEvent
+case class CodeNotFound() extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
@@ -52,7 +53,13 @@ case class ClientUp(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
-case class JoinFriendsRoom(client: ActorRef[ClientEvent], roomId: ID, nickName: String) extends MotherEvent
+case class JoinFriendsRoom(
+    client: ActorRef[ClientEvent],
+    roomId: ID,
+    nickName: String,
+    replyTo: ActorRef[Boolean]
+    // replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld)]
+) extends MotherEvent
 case class RoomCreated(roomId: ID, childRef: ActorRef[ChildEvent], owner: ActorRef[ClientEvent]) extends MotherEvent
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */

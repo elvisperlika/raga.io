@@ -184,13 +184,20 @@ object ClientActor:
     given ExecutionContext = ctx.executionContext
 
     ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
-    manager.ask[RemoteWorld](replyTo => RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)).onComplete {
-      case Success(remoteWorld) =>
-        ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
-      case Failure(ex) =>
-        ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
-        ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
-    }
+    manager
+      .ask[(ActorRef[ChildEvent], RemoteWorld) | CodeNotFound](replyTo =>
+        RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)
+      )
+      .onComplete {
+        case Success((newManager, remoteWorld)) =>
+          ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, newManager)
+        case Success(CodeNotFound()) =>
+          ctx.log.warn(s"🏀 Room with code $roomCode not found")
+          ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
+        case Failure(ex) =>
+          ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
+          ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
+      }
     Behaviors.same
 
   /** Run the game with the given world and player.

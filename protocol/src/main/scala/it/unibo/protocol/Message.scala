@@ -3,9 +3,8 @@ package it.unibo.protocol
 import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.ServiceKey
 import akka.cluster.ClusterEvent.MemberEvent
-
 type ID = String
-
+type RoomCode = String
 type PlayerRef = (ID, ActorRef[ClientEvent])
 
 trait Message
@@ -16,11 +15,19 @@ trait ChildEvent extends Message
 
 case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], playerRef: ActorRef[ClientEvent])
     extends ChildEvent
+case class RequestWorldInRoom(
+    nickName: ID,
+    roomCode: RoomCode,
+    replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld) | CodeNotFound],
+    playerRef: ActorRef[ClientEvent]
+) extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
 case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
-case class SetUp(worldId: ID) extends ChildEvent
+case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent]) extends ChildEvent
 case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 case class EatenPlayer(id: ID) extends ChildEvent
+case class CreateFriendsRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
+case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
@@ -28,10 +35,15 @@ trait ClientEvent extends Message
 
 case class JoinNetwork(event: MemberEvent) extends ClientEvent
 case class UpdateView() extends ClientEvent
-case class GamaManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
+case class GameManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
 case class ServiceNotAvailable() extends ClientEvent
 case class EndGame() extends ClientEvent
+case class FriendsRoomCreated(roomId: ID) extends ClientEvent
+case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
+case class NewPlayerJoined(player: Player) extends ClientEvent
+case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent]) extends ClientEvent
+case class CodeNotFound() extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
@@ -41,6 +53,14 @@ case class ClientUp(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
+case class JoinFriendsRoom(
+    client: ActorRef[ClientEvent],
+    roomId: ID,
+    nickName: String,
+    replyTo: ActorRef[Boolean]
+    // replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld)]
+) extends MotherEvent
+case class RoomCreated(roomId: ID, childRef: ActorRef[ChildEvent], owner: ActorRef[ClientEvent]) extends MotherEvent
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */
 

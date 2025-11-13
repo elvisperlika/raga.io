@@ -19,6 +19,11 @@ object ClientLauncher2:
   def main(args: Array[String]): Unit =
     startUp()
 
+object ClientLauncher3:
+
+  def main(args: Array[String]): Unit =
+    startUp()
+
 def startUp(): Unit =
   val dynamicConfigString =
     s"""

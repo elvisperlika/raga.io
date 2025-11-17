@@ -5,35 +5,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.Cluster
-import it.unibo.protocol.ChildClientLeft
-import it.unibo.protocol.ChildEvent
-import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.*
 import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_PLAYER_SIZE
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
 import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
 import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
-import akka.actor.typed.scaladsl.AskPattern.*
-import it.unibo.protocol.EatenPlayer
-import it.unibo.protocol.Food
-import it.unibo.protocol.ID
-import it.unibo.protocol.Player
-import it.unibo.protocol.ReceivedRemoteWorld
-import it.unibo.protocol.RemoteWorld
-import it.unibo.protocol.RequestRemoteWorldUpdate
-import it.unibo.protocol.RequestWorld
 import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
-import it.unibo.protocol.SetUp
-import it.unibo.protocol.World
-import it.unibo.protocol.EndGame
-import scala.concurrent.duration.DurationInt
-
-import it.unibo.protocol._
-import akka.util.Timeout
-import akka.actor.typed.Scheduler
-import scala.concurrent.ExecutionContext
-import scala.util.Success
-import scala.util.Failure
 
 object ChildActor:
 
@@ -105,69 +83,20 @@ object ChildActor:
           case None => ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
         work(newWorld, managedPlayers, motherRef)
 
-      case RequestWorldInRoom(nickName, roomCode, clientReplyTo, playerRef) =>
-        if roomCode == world.id then
-          ctx.log.info(s"🤖 Player $nickName tried to join room $roomCode but this is room ${world.id}")
-          val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
-          val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-          val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-          val newWorld = world.copy(players = world.players :+ newPlayer)
-          clientReplyTo ! (ctx.self, RemoteWorld(newWorld, Player(nickName, 0, 0, 0)))
-          work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
-        else
-          ctx.log.info(s"🤖 Player $nickName joining room $roomCode from room ${world.id}")
-          given Timeout = 3.seconds
-          given Scheduler = ctx.system.scheduler
-          given ExecutionContext = ctx.executionContext
-          // motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
-          motherRef
-            .ask[Boolean](childReplyTo => JoinFriendsRoom(playerRef, roomCode, nickName, childReplyTo))
-            .onComplete {
-              case Success(true) =>
-                var managedPlayersUpdated = managedPlayers.removed(nickName)
-                work(world, managedPlayersUpdated, motherRef)
-              case Failure(ex) =>
-                ctx.log.error(s"🤖Failed to join friends room: ${ex.getMessage}", ex)
-                clientReplyTo ! CodeNotFound()
-                work(world, managedPlayers, motherRef)
-              case Success(false) =>
-                ctx.log.error(s"🤖Failed to join friends room")
-                clientReplyTo ! CodeNotFound()
-                work(world, managedPlayers, motherRef)
-            }
-          Behaviors.same
+      case RequestWorldInRoom(nickName, roomCode, clientRef) =>
+        motherRef ! ClientAskToJoinRoom(clientRef, roomCode, nickName, ctx.self)
+        Behaviors.same
 
-      case CreateFriendsRoom(nickName, client) =>
-        val roomId = java.util.UUID.randomUUID().toString.take(6)
-        ctx.log.info(s"🏠 Child ${ctx.self.path} creating friends room $roomId for $nickName (${client.path})")
-
-        val newWorld = World(
-          id = roomId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
-          foods = generateFoods(INIT_FOOD_NUMBER)
-        )
-
-        val ownerNick = "owner"
-        val randX = scala.util.Random.nextDouble() * (newWorld.width - DEFAULT_PLAYER_SIZE)
-        val randY = scala.util.Random.nextDouble() * (newWorld.height - DEFAULT_PLAYER_SIZE)
-        val ownerPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-
-        val updatedWorld = newWorld.copy(players = Seq(ownerPlayer))
-        val updatedManagedPlayers = Map(nickName -> client)
-
-        // val dummyPlayer = Player("owner", 50, 50, DEFAULT_PLAYER_SIZE)
-        client ! InitWorld(updatedWorld, ownerPlayer, ctx.self)
-        client ! ReceivedRemoteWorld(updatedWorld)
-
-        motherRef ! RoomCreated(roomId, ctx.self, client)
-        work(updatedWorld, updatedManagedPlayers, motherRef)
+      case RequestPrivateRoom(clientNickName, clientRef) =>
+        ctx.log.info(s"🤖 Player $clientNickName request to create a private room")
+        motherRef ! RequestPrivateRoomCreation(clientRef, clientNickName)
+        Behaviors.same
 
       case PlayerJoinedRoom(nickName, client) =>
         ctx.log.info(s"🎉 New player $nickName joined this room!")
         val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
         val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
-
         val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
-
         val newWorld = world.copy(players = world.players :+ newPlayer)
         val newManagedPlayers = managedPlayers + (nickName -> client)
 

@@ -7,25 +7,11 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.typed._
-import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterEvent.*
+import akka.cluster.typed.*
 import akka.util.Timeout
-import it.unibo.protocol.ChildEvent
-import it.unibo.protocol.ClientEvent
-import it.unibo.protocol.EatenPlayer
-import it.unibo.protocol.EndGame
-import it.unibo.protocol.GameManagerAddress
-import it.unibo.protocol.JoinNetwork
-import it.unibo.protocol.Player
-import it.unibo.protocol.ReceivedRemoteWorld
-import it.unibo.protocol.RemoteWorld
-import it.unibo.protocol.RequestRemoteWorldUpdate
-import it.unibo.protocol.RequestWorld
+import it.unibo.protocol.*
 import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
-import it.unibo.protocol.ServiceNotAvailable
-import it.unibo.protocol.World
 import it.unibo.raga.controller.WorldConverter.*
 import it.unibo.raga.model.ImmutableGameStateManager
 import it.unibo.raga.model.LocalPlayer
@@ -37,7 +23,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.Failure
 import scala.util.Success
-import it.unibo.protocol.*
 
 object ClientActor:
 
@@ -83,7 +68,10 @@ object ClientActor:
             ctx.log.info(s"🏀 Join Button pressed...")
             val nickName = view.getNickname()
             manager match
-              case Some(ref) =>
+              case Some(_) if nickName.isEmpty =>
+                view.showAlert("Please enter a nickname")
+                Behaviors.same
+              case Some(ref) if nickName.nonEmpty =>
                 requestWorld(nickName, ctx, ref)
               case _ =>
                 view.showAlert("Service Not Available, please wait...")
@@ -119,7 +107,8 @@ object ClientActor:
             val nickName = view.getNickname()
             manager match
               case Some(ref) =>
-                requestWorldWithRoomCode(nickName, code, ctx, ref)
+                ref ! RequestWorldInRoom(nickName, code, ctx.self)
+                Behaviors.same
               case _ =>
                 view.showAlert("Service Not Available, please wait...")
                 Behaviors.same
@@ -132,12 +121,21 @@ object ClientActor:
             ctx.log.info("🏀 Create & Join Room pressed...")
             val nickName = view.getNickname()
             manager match
-              case Some(ref) =>
+              case Some(_) if nickName.isEmpty =>
+                view.showAlert("Please enter a nickname")
+                Behaviors.same
+              case Some(ref) if nickName.nonEmpty =>
                 ctx.log.info(s"🏀 Asking to create a room for $nickName")
-                ref ! CreateFriendsRoom(nickName, ctx.self)
-              case None =>
+                ref ! RequestPrivateRoom(nickName, ctx.self)
+              case _ =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
+
+          case PrivateManagerAddress(privateManagerRef) =>
+            ctx.log.info(s"🏀 Private Gama Manager found: ${privateManagerRef.path}")
+            val nickName = view.getNickname()
+            privateManagerRef ! PlayerJoinedRoom(nickName, ctx.self)
+            viewBehavior(view, Some(privateManagerRef))
 
           case InitWorld(world, player, managerRef) =>
             ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
@@ -171,33 +169,6 @@ object ClientActor:
       case Failure(ex) =>
         ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
     }
-    Behaviors.same
-
-  private def requestWorldWithRoomCode(
-      nickName: String,
-      roomCode: String,
-      ctx: ActorContext[ClientEvent | LocalClientEvent],
-      manager: ActorRef[ChildEvent]
-  ): Behavior[ClientEvent | LocalClientEvent] =
-    given Timeout = 3.seconds
-    given Scheduler = ctx.system.scheduler
-    given ExecutionContext = ctx.executionContext
-
-    ctx.log.info(s"🏀 Requesting World in room $roomCode to ${manager.path}...")
-    manager
-      .ask[(ActorRef[ChildEvent], RemoteWorld) | CodeNotFound](replyTo =>
-        RequestWorldInRoom(nickName, roomCode, replyTo, ctx.self)
-      )
-      .onComplete {
-        case Success((newManager, remoteWorld)) =>
-          ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, newManager)
-        case Success(CodeNotFound()) =>
-          ctx.log.warn(s"🏀 Room with code $roomCode not found")
-          ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
-        case Failure(ex) =>
-          ctx.log.error(s"🏀 Failed to request world from manager: ${ex.getMessage}", ex)
-          ctx.self ! LocalClientEvent.JoinFriendsRoomFailed(roomCode)
-      }
     Behaviors.same
 
   /** Run the game with the given world and player.

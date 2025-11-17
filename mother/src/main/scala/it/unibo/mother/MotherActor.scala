@@ -4,25 +4,14 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
-import it.unibo.protocol.ChildClientLeft
-import it.unibo.protocol.ChildEvent
-import it.unibo.protocol.ChildServerLeft
-import it.unibo.protocol.ChildServerUp
-import it.unibo.protocol.ClientEvent
-import it.unibo.protocol.ClientLeft
-import it.unibo.protocol.ClientUp
-import it.unibo.protocol.GameManagerAddress
-import it.unibo.protocol.ID
-import it.unibo.protocol.MotherEvent
-import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
-import it.unibo.protocol.ServiceNotAvailable
-import it.unibo.protocol.SetUp
 import it.unibo.protocol.*
+import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 
 private case class ChildState(
     ref: ActorRef[ChildEvent],
     clients: List[ActorRef[ClientEvent]] = List.empty,
-    worldId: ID
+    worldId: ID,
+    isPrivate: Boolean = false
 )
 
 private case class MotherState(
@@ -94,49 +83,39 @@ object MotherActor:
         ctx.log.info(s"😍 Child Left: ${child.path}")
         behavior(state.copy(children = state.children.filterNot(_.ref == child)))
 
-      case JoinFriendsRoom(
-            client: ActorRef[ClientEvent],
-            roomId: ID,
-            nickName: String,
-            replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld)]
-          ) =>
-        state.rooms.get(roomId) match
-          case Some(childState) =>
-            ctx.log.info(s"😍 Client ${client.path} joining room $roomId")
-            val updatedChild = childState.copy(clients = client :: childState.clients)
-            val updatedRooms = state.rooms + (roomId -> updatedChild)
-            client ! GameManagerAddress(childState.ref)
-            childState.ref ! PlayerJoinedRoom(nickName, client)
-            replyTo ! true
-
+      case ClientAskToJoinRoom(client, roomCode, nickName, replyTo) =>
+        ctx.log.info(s"👉 Client $nickName asked to join room $roomCode")
+        state.children.foreach(c => ctx.log.info(s"👉 Room available: ${c.worldId}"))
+        state.children.find(_.worldId == roomCode) match
+          case Some(roomState) =>
+            client ! PrivateManagerAddress(roomState.ref)
+            val updatedChild = roomState.copy(clients = client :: roomState.clients)
+            val updatedRooms = state.rooms + (roomCode -> updatedChild)
             behavior(
               state.copy(
-                children = state.children.map(c => if c.worldId == roomId then updatedChild else c),
+                children = state.children.map(c => if c.worldId == roomCode then updatedChild else c),
                 rooms = updatedRooms
               )
             )
-
-          case None =>
-            ctx.log.info(s"😭 Room $roomId not found for client ${client.path}")
-            client ! JoinFriendsRoomFailed(roomId)
+          case _ =>
+            ctx.log.info("😭 Room not found.")
+            client ! JoinFriendsRoomFailed(roomCode)
             Behaviors.same
 
-      case CreateFriendsRoom(nickName, client) =>
-        findFreeChild(state) match
+      case RequestPrivateRoomCreation(clientRef, clientNickName) =>
+        findFreeChild(state).filter(_.isPrivate == false) match
           case None =>
             ctx.log.info("😭 No available child servers to create a friends room.")
-            client ! ServiceNotAvailable()
+            clientRef ! ServiceNotAvailable()
             Behaviors.same
 
           case Some(child) =>
             ctx.log.info(
-              s"😍 Asking ${child.ref.path.name} to create a friends room for $nickName (${client.path.name})"
+              s"😍 Asking ${child.ref.path.name} to create a friends room for $clientNickName (${clientRef.path.name})"
             )
-
-            child.ref ! CreateFriendsRoom(nickName, client)
-            val updatedChild = child.copy(clients = client :: child.clients)
+            clientRef ! PrivateManagerAddress(child.ref)
+            val updatedChild = child.copy(clients = clientRef :: child.clients)
             val updatedChildren = state.children.map(c => if c.ref == child.ref then updatedChild else c)
-
             behavior(state.copy(children = updatedChildren))
 
       case RoomCreated(roomId, childRef, owner) =>

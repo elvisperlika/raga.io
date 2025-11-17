@@ -121,9 +121,7 @@ object ChildActor:
           given ExecutionContext = ctx.executionContext
           // motherRef ! JoinFriendsRoom(playerRef, roomCode, nickName)
           motherRef
-            .ask[Boolean](childReplyTo =>
-              JoinFriendsRoom(playerRef, roomCode, nickName, childReplyTo)
-            )
+            .ask[Boolean](childReplyTo => JoinFriendsRoom(playerRef, roomCode, nickName, childReplyTo))
             .onComplete {
               case Success(true) =>
                 var managedPlayersUpdated = managedPlayers.removed(nickName)

@@ -1,10 +1,25 @@
-import sbt.Keys.*
+import sbt.Keys._
+import sbtassembly.AssemblyPlugin.autoImport._
 import sbtassembly.AssemblyPlugin.autoImport.MergeStrategy
-import sbtassembly.AssemblyPlugin.autoImport.*
 
 ThisBuild / version := "1.0.0-SNAPSHOT"
 ThisBuild / scalafmtOnCompile := true
 ThisBuild / scalaVersion := "3.3.6"
+
+// === AKKA REPOSITORIES (USA IL TUO TOKEN QUI) ===
+val AkkaToken = sys.env.getOrElse("AKKA_TOKEN", "")
+
+ThisBuild / resolvers ++= Seq(
+  "akka-secure-mvn" at s"https://repo.akka.io/$AkkaToken/secure",
+  Resolver.url("akka-secure-ivy", url(s"https://repo.akka.io/$AkkaToken/secure"))(
+    Resolver.ivyStylePatterns
+  )
+)
+
+// === AKKA VERSION ===
+val AkkaVersion = "2.10.11"
+
+// === MERGE STRATEGY ===
 ThisBuild / assemblyMergeStrategy := {
   case PathList("META-INF", "versions", "9", "module-info.class") => MergeStrategy.discard
   case PathList("module-info.class") => MergeStrategy.discard
@@ -14,23 +29,22 @@ ThisBuild / assemblyMergeStrategy := {
     oldStrategy(x)
 }
 
+// === COMMON SETTINGS ===
 lazy val commonSettings = Seq(
-  resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor-typed" % "2.10.9", // For standard log configuration
-    "com.typesafe.akka" %% "akka-remote" % "2.10.9", // For akka remote
-    "com.typesafe.akka" %% "akka-cluster-typed" % "2.10.9", // Akka clustering module
-    "com.typesafe.akka" %% "akka-serialization-jackson" % "2.10.9",
-    "com.typesafe.akka" %% "akka-slf4j" % "2.10.9",
-    "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.10.9" % Test,
+    "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-remote" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-cluster-typed" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.5.18",
     "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
   ),
   scalacOptions += "-Wunused:imports"
 )
 
-// ---
-
+// === MODULES ===
 lazy val protocol = (project in file("protocol"))
   .settings(
     name := "protocol"
@@ -61,6 +75,5 @@ lazy val clientModule = (project in file("client"))
   .settings(commonSettings)
   .dependsOn(protocol)
 
-// ---
-
+// enable assembly
 enablePlugins(AssemblyPlugin)

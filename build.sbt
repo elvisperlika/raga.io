@@ -1,13 +1,21 @@
-import sbt.Keys._
-import sbtassembly.AssemblyPlugin.autoImport._
+import sbt.Keys.*
 import sbtassembly.AssemblyPlugin.autoImport.MergeStrategy
+import sbtassembly.AssemblyPlugin.autoImport.*
 
 ThisBuild / version := "1.0.0-SNAPSHOT"
 ThisBuild / scalafmtOnCompile := true
 ThisBuild / scalaVersion := "3.3.6"
 
+Global / parallelExecution := true
+
 // === AKKA REPOSITORIES (USA IL TUO TOKEN QUI) ===
-val AkkaToken = sys.env.getOrElse("AKKA_TOKEN", "")
+val AkkaToken = sys.env.get("AKKA_TOKEN") match {
+  case Some(token) => token
+  case None =>
+    sys.error(
+      "AKKA_TOKEN environment variable is not set. Please set it to access the Akka secure repository."
+    )
+}
 
 ThisBuild / resolvers ++= Seq(
   "akka-secure-mvn" at s"https://repo.akka.io/$AkkaToken/secure",

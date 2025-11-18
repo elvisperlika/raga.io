@@ -48,15 +48,18 @@ object ClientActor:
 
     viewBehavior(view)
 
-  /** Defines the behavior of the client actor in response to various events while the user is interacting with the
-    * homepage UI.
+  /** Defines the behavior of the client actor in response to various events while the user is
+    * interacting with the homepage UI.
     *
     * @param view
     *   View instance that user interacts with
     * @param manager
     *   Optional reference to the game manager actor
     */
-  def viewBehavior(view: View, manager: Option[ActorRef[ChildEvent]] = None): Behavior[ClientEvent | LocalClientEvent] =
+  def viewBehavior(
+      view: View,
+      manager: Option[ActorRef[ChildEvent]] = None
+  ): Behavior[ClientEvent | LocalClientEvent] =
     Behaviors.setup: ctx =>
       Behaviors.receive: (_, msg) =>
         msg match
@@ -189,9 +192,12 @@ object ClientActor:
     Behaviors.receive: (ctx, msg) =>
       msg match
         case LocalClientEvent.Tick if isSynced =>
+          ctx.log.info(s"🏀🏀🏀 Tick - Moving player ${player.id}")
+          ctx.log.info(s"------> ${managerRef.path}")
           val (dx, dy) = gameView.direction
           val newModel = model.movePlayerDirection(player.id, dx, dy).tick()
-          val eatenPlayers = model.world.players.filterNot(p => newModel.world.players.exists(_.id == p.id))
+          val eatenPlayers =
+            model.world.players.filterNot(p => newModel.world.players.exists(_.id == p.id))
           if eatenPlayers.nonEmpty then
             ctx.log.info(s"🏀 Players eaten: ${eatenPlayers.map(_.id).mkString(", ")}")
             eatenPlayers.foreach(player => managerRef ! EatenPlayer(player.id))
@@ -200,6 +206,7 @@ object ClientActor:
           run(newModel, gameView, player, managerRef, isSynced = false)
 
         case ReceivedRemoteWorld(remoteWorld) =>
+          ctx.log.info(s"🍟 Received remote world update")
           val world = createLocalWorld(remoteWorld)
           val newModel = new ImmutableGameStateManager(world)
           gameView.updateWorld(newModel.world)
@@ -212,9 +219,18 @@ object ClientActor:
           endGameView.setLocationRelativeTo(gameView)
           endGame(endGameView)
 
+        case NewManager(newManagerRef, newWorld, player) =>
+          ctx.log.info(s"🏀 New Manager Address received: ${newManagerRef.path}")
+          val localWorld = createLocalWorld(newWorld)
+          val newModel = new ImmutableGameStateManager(localWorld)
+          val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
+          timer.startTimerAtFixedRate(LocalClientEvent.Tick, 50.millis)
+          run(newModel, gameView, localPlayer, newManagerRef, isSynced = true)
+
         case _ =>
           Behaviors.same
 
-  def endGame(endGameView: EndGameView): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
-    endGameView.visible = true
-    Behaviors.same
+  def endGame(endGameView: EndGameView): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup:
+    ctx =>
+      endGameView.visible = true
+      Behaviors.same

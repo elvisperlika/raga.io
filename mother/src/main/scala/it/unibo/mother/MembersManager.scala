@@ -46,7 +46,9 @@ object MembersManager:
               val connectedClients = newClients -- currentClients
               val disconnected = currentClients -- newClients
               connectedClients.foreach(motherRef ! ClientUp(_))
-              connectedClients.foreach(client => ctx.log.info(s"🪀 Connected client: ${client.path}"))
+              connectedClients.foreach(client =>
+                ctx.log.info(s"🪀 Connected client: ${client.path}")
+              )
 
               disconnected.foreach(motherRef ! ClientLeft(_))
               behavior(motherRef, newClients, currentChildren)

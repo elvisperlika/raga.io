@@ -12,7 +12,9 @@ object AIMovement:
     */
   def nearestFood(player: String, world: LocalWorld): Option[LocalFood] =
     world.foods
-      .sortBy(food => world.playerById(player).map(p => p.distanceTo(food)).getOrElse(Double.MaxValue))
+      .sortBy(food =>
+        world.playerById(player).map(p => p.distanceTo(food)).getOrElse(Double.MaxValue)
+      )
       .headOption
 
   /** Moves the AI toward the nearest food

@@ -23,8 +23,8 @@ object ChildActor:
       case SetUp(worldId, motherRef) =>
         work(
           world = World(
-            id = worldId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT, players = Seq.empty,
-            foods = generateFoods(INIT_FOOD_NUMBER)
+            id = worldId, width = DEFAULT_WORLD_WIDTH, height = DEFAULT_WORLD_HEIGHT,
+            players = Seq.empty, foods = generateFoods(INIT_FOOD_NUMBER)
           ),
           managedPlayers = Map.empty,
           motherRef = motherRef
@@ -41,6 +41,7 @@ object ChildActor:
   ): Behavior[ChildEvent] = Behaviors.receive: (ctx, msg) =>
     msg match
       case RequestWorld(nickName, replyTo, playerRef) =>
+        ctx.log.info(s"🤖 Player $nickName requested to join the world ${world.id}")
         val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
         val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
         val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
@@ -49,8 +50,9 @@ object ChildActor:
         work(newWorld, managedPlayers + (nickName -> playerRef), motherRef)
 
       case RequestRemoteWorldUpdate(updatedWorld, (playerId, playerRef)) =>
+        ctx.log.info(s"->🤖<- Received world update from player $playerId")
         val mergedWorld = mergeWorlds(world, updatedWorld, playerId)
-        ctx.spawnAnonymous(Behaviors.setup[Nothing] { anonymousCtx =>
+        ctx.spawnAnonymous(Behaviors.setup[Nothing] { _ =>
           if managedPlayers.nonEmpty then
             managedPlayers.foreach: (_, ref) =>
               ref ! ReceivedRemoteWorld(mergedWorld)
@@ -59,6 +61,7 @@ object ChildActor:
         work(mergedWorld, managedPlayers, motherRef)
 
       case ChildClientLeft(client) =>
+        ctx.log.info(s"🤖 A client has left: ${client.path}")
         val playerId = managedPlayers.find(p => p._2 == client)
         playerId match
           case Some(player) =>
@@ -74,6 +77,7 @@ object ChildActor:
             work(world, managedPlayers, motherRef)
 
       case EatenPlayer(playerId) =>
+        ctx.log.info(s"🤖 Player $playerId has been eaten and will be removed from the world")
         val newWorldPlayers = world.players.filterNot(_.id == playerId)
         val newWorld = world.copy(players = newWorldPlayers)
         managedPlayers.foreach: (_, ref) =>
@@ -84,6 +88,7 @@ object ChildActor:
         work(newWorld, managedPlayers, motherRef)
 
       case RequestWorldInRoom(nickName, roomCode, clientRef) =>
+        ctx.log.info(s"🤖 Player $nickName requests to join room $roomCode")
         motherRef ! ClientAskToJoinRoom(clientRef, roomCode, nickName, ctx.self)
         Behaviors.same
 
@@ -107,10 +112,23 @@ object ChildActor:
             ref ! NewPlayerJoined(newPlayer)
           case _ =>
         }
-
         work(newWorld, newManagedPlayers, motherRef)
 
-  /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is updated.
+      case NewSetUp(world, clients) =>
+        ctx.log.info(s"🤖 Setting up new world ${world.id} with ${clients.size} clients")
+        clients.foreach: client =>
+          val player = world.players.find(_.id == client._1).get
+          client._2 ! NewManager(ctx.self, world, player)
+        ctx.log.info(s"🤖 Received New SetUp with ${clients.size} clients")
+        work(world, clients, motherRef)
+
+      case RequestWorldToBackup(replyTo) =>
+        ctx.log.info(s"🤖🤖🤖🤖 Received request to backup the world ${world.id}")
+        replyTo ! WorldToBackup(world, managedPlayers)
+        Behaviors.same
+
+  /** Merges two worlds by keeping all players and foods, ensuring the requesting player's data is
+    * updated.
     *
     * @param oldWorld
     *   Current world state
@@ -125,7 +143,8 @@ object ChildActor:
     val otherPlayers = oldWorld.players.filterNot(_.id == playerId)
     val requestingPlayer = newWorld.players.filter(_.id == playerId)
     val existingFoodIds = newWorld.foods.map(_.id).toSet
-    val extraFoods = generateFoods(INIT_FOOD_NUMBER).filterNot(food => existingFoodIds.contains(food.id))
+    val extraFoods =
+      generateFoods(INIT_FOOD_NUMBER).filterNot(food => existingFoodIds.contains(food.id))
     World(
       id = oldWorld.id,
       width = DEFAULT_WORLD_WIDTH,

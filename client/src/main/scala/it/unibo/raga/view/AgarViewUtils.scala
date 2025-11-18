@@ -16,7 +16,8 @@ object AgarViewUtils:
   private val worldNameOffsetX = 5
   private val worldNameOffsetY = 15
   private val playerPalette: Array[Color] =
-    Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray)
+    Array(Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green,
+      Color.lightGray)
 
   private def playerColor(id: String): Color =
     val randIdx = Math.abs(id.hashCode)

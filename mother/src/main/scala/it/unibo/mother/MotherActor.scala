@@ -9,7 +9,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import it.unibo.mother.BackupActor.RequestBackup
 import it.unibo.protocol.*
-import it.unibo.protocol.BackupEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 
 import scala.concurrent.ExecutionContext

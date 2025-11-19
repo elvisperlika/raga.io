@@ -17,6 +17,11 @@ object ChildLauncher2:
   def main(args: Array[String]): Unit =
     startUp()
 
+object ChildLauncher3:
+
+  def main(args: Array[String]): Unit =
+    startUp()
+
 private def startUp(): Unit =
   val dynamicConfigString =
     s"""

@@ -7,7 +7,8 @@ import it.unibo.raga.model.LocalWorld
 import java.awt.Graphics2D
 import scala.swing.*
 
-class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[LocalClientEvent]) extends MainFrame:
+class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[LocalClientEvent])
+    extends MainFrame:
 
   title = s"Raga.io - Local View ($playerId)"
   preferredSize = new Dimension(400, 400)

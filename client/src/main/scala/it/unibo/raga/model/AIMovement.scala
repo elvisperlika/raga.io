@@ -3,34 +3,24 @@ package it.unibo.raga.model
 /** Object responsible for AI movement logic, separate from the game state management */
 object AIMovement:
 
-  /** Finds the nearest food for a given player in the world
-    * @param player
-    *   the ID of the player for whom to find the nearest food
-    * @param world
-    *   the current game world containing players and food
-    * @return
-    */
-  def nearestFood(player: String, world: LocalWorld): Option[LocalFood] =
-    world.foods
-      .sortBy(food => world.playerById(player).map(p => p.distanceTo(food)).getOrElse(Double.MaxValue))
-      .headOption
+  def nearestFoodLocation(player: String, world: LocalWorld): Option[(Double, Double)] =
+    world.playerById(player).flatMap { p =>
+      world.foods.minByOption(f => p.distanceTo(f)).map(f => (f.x, f.y))
+    }
 
-  /** Moves the AI toward the nearest food
-    *
-    * @param gameManager
-    *   The game state manager that provides world state and movement capabilities
-    */
-  def moveAI(name: String, gameManager: GameStateManager): Unit =
-    val world = gameManager.getWorld
-    val aiOpt = world.playerById(name)
-    val foodOpt = nearestFood(name, world)
-    (aiOpt, foodOpt) match
-      case (Some(ai), Some(food)) =>
-        val dx = food.x - ai.x
-        val dy = food.y - ai.y
-        val distance = math.hypot(dx, dy)
-        if (distance > 0)
-          val normalizedDx = dx / distance
-          val normalizedDy = dy / distance
-          gameManager.movePlayerDirection(name, normalizedDx, normalizedDy)
-      case _ => // Do nothing if AI or food doesn't exist
+  def nearestPlayerLocation(ai: LocalPlayer, world: LocalWorld): Option[(Double, Double)] =
+    world.players
+      .filterNot(_.id == ai.id)
+      .filter(p => p.mass < ai.mass)
+      .minByOption(p => ai.distanceTo(p))
+      .map(p => (p.x, p.y))
+
+  def getAIDirection(ai: LocalPlayer, world: LocalWorld): (Double, Double) =
+    val target = nearestFoodLocation(ai.id, world).orElse(nearestPlayerLocation(ai, world))
+    target match
+      case Some((tx, ty)) =>
+        val dx = tx - ai.x
+        val dy = ty - ai.y
+        val dist = math.hypot(dx, dy)
+        if dist > 0 then (dx / dist, dy / dist) else (0.0, 0.0)
+      case None => (0.0, 0.0)

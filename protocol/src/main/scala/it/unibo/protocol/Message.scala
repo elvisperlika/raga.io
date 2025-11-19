@@ -13,26 +13,39 @@ trait Message
 
 trait ChildEvent extends Message
 
-case class RequestWorld(nickName: String, replyTo: ActorRef[RemoteWorld], playerRef: ActorRef[ClientEvent])
-    extends ChildEvent
+case class RequestWorld(
+    nickName: String,
+    replyTo: ActorRef[RemoteWorld],
+    playerRef: ActorRef[ClientEvent]
+) extends ChildEvent
 case class RequestWorldInRoom(
     nickName: ID,
     roomCode: RoomCode,
-    replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld) | CodeNotFound],
-    playerRef: ActorRef[ClientEvent]
+    client: ActorRef[ClientEvent]
 ) extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
-case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
-case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent]) extends ChildEvent
+case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent], backupRef: ActorRef[BackupEvent])
+    extends ChildEvent
 case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 case class EatenPlayer(id: ID) extends ChildEvent
-case class CreateFriendsRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
+case class RequestPrivateRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
+case class NewSetUp(world: World, clients: Map[String, ActorRef[ClientEvent]]) extends ChildEvent
+case class RequestWorldToBackup(replyTo: ActorRef[SaveWorldData]) extends ChildEvent
+case class PlayerMove(id: ID, newX: Double, newY: Double) extends ChildEvent
+
+trait BackupEvent extends Message
+case class SaveWorldData(
+    seconds: ActorRef[ChildEvent],
+    world: World,
+    managedPlayers: Map[String, ActorRef[ClientEvent]]
+) extends BackupEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
 trait ClientEvent extends Message
 
+/** The client join the network. */
 case class JoinNetwork(event: MemberEvent) extends ClientEvent
 case class UpdateView() extends ClientEvent
 case class GameManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
@@ -42,8 +55,15 @@ case class EndGame() extends ClientEvent
 case class FriendsRoomCreated(roomId: ID) extends ClientEvent
 case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 case class NewPlayerJoined(player: Player) extends ClientEvent
-case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent]) extends ClientEvent
+case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
+    extends ClientEvent
 case class CodeNotFound() extends ClientEvent
+case class PrivateManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
+case class NewManager(
+    newManagerRef: ActorRef[ChildEvent],
+    newWorld: World,
+    player: Player
+) extends ClientEvent
 
 /* -------------------------------------------- Mother Events -------------------------------------------- */
 
@@ -53,28 +73,54 @@ case class ClientUp(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerUp(child: ActorRef[ChildEvent]) extends MotherEvent
 case class ClientLeft(client: ActorRef[ClientEvent]) extends MotherEvent
 case class ChildServerLeft(child: ActorRef[ChildEvent]) extends MotherEvent
-case class JoinFriendsRoom(
+case class ClientAskToJoinRoom(
     client: ActorRef[ClientEvent],
-    roomId: ID,
+    roomCode: RoomCode,
     nickName: String,
-    replyTo: ActorRef[Boolean]
-    // replyTo: ActorRef[(ActorRef[ChildEvent], RemoteWorld)]
+    replyTo: ActorRef[ChildEvent]
 ) extends MotherEvent
-case class RoomCreated(roomId: ID, childRef: ActorRef[ChildEvent], owner: ActorRef[ClientEvent]) extends MotherEvent
+case class RoomCreated(
+    roomId: ID,
+    childRef: ActorRef[ChildEvent],
+    owner: ActorRef[ClientEvent]
+) extends MotherEvent
+
+// Private room creation
+case class RequestPrivateRoomCreation(
+    client: ActorRef[ClientEvent],
+    nickName: String
+) extends MotherEvent
 
 /* -------------------------------------------- Service Keys -------------------------------------------- */
 
 object ServiceKeys:
 
-  val CLIENT_SERVICE_KEY: ServiceKey[ClientEvent] = ServiceKey[ClientEvent]("client-service")
-  val MOTHER_SERVICE_KEY: ServiceKey[MotherEvent] = ServiceKey[MotherEvent]("mother-server-service")
-  val CHILD_SERVICE_KEY: ServiceKey[ChildEvent] = ServiceKey[ChildEvent]("child-server-service")
+  val CLIENT_SERVICE_KEY: ServiceKey[ClientEvent] =
+    ServiceKey[ClientEvent]("client-service")
+  val MOTHER_SERVICE_KEY: ServiceKey[MotherEvent] =
+    ServiceKey[MotherEvent]("mother-server-service")
+  val CHILD_SERVICE_KEY: ServiceKey[ChildEvent] =
+    ServiceKey[ChildEvent]("child-server-service")
 
 /* -------------------------------------------- World entities -------------------------------------------- */
 
-private trait Entity
+trait Entity:
 
-case class Player(id: ID, x: Double, y: Double, mass: Double) extends Entity
+  def id: String
+  def mass: Double
+  def x: Double
+  def y: Double
+  def radius: Double = math.sqrt(mass / math.Pi)
+
+  def distanceTo(other: Entity): Double =
+    val dx = x - other.x
+    val dy = y - other.y
+    math.hypot(dx, dy)
+
+case class Player(id: ID, x: Double, y: Double, mass: Double) extends Entity:
+
+  def grow(entity: Entity): Player =
+    copy(mass = mass + entity.mass)
 
 case class Food(id: ID, x: Double, y: Double, mass: Double) extends Entity
 

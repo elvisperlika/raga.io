@@ -13,6 +13,7 @@ import akka.util.Timeout
 import it.unibo.protocol.*
 import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
 import it.unibo.raga.controller.WorldConverter.*
+import it.unibo.raga.model.AIMovement
 import it.unibo.raga.model.ImmutableGameStateManager
 import it.unibo.raga.model.LocalPlayer
 import it.unibo.raga.view.EndGameView
@@ -35,7 +36,7 @@ object ClientActor:
     case ReceivedWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
     case JoinFriendsRoomFailed(code: String)
 
-  def apply(): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
+  def apply(isBot: Boolean): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
     ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self)
     view.visible = true
@@ -46,7 +47,7 @@ object ClientActor:
     val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(JoinNetwork.apply)
     cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
 
-    viewBehavior(view)
+    viewBehavior(view, isBot = isBot)
 
   /** Defines the behavior of the client actor in response to various events while the user is
     * interacting with the homepage UI.
@@ -58,9 +59,16 @@ object ClientActor:
     */
   def viewBehavior(
       view: View,
-      manager: Option[ActorRef[ChildEvent]] = None
+      manager: Option[ActorRef[ChildEvent]] = None,
+      isBot: Boolean
   ): Behavior[ClientEvent | LocalClientEvent] =
     Behaviors.setup: ctx =>
+      if isBot then
+        ctx.log.info("🏀 Bot client starting...")
+        val botNickName = s"Bot_${scala.util.Random.alphanumeric.take(5).mkString}"
+        view.setNickname(botNickName)
+        ctx.self ! LocalClientEvent.JoinRandomRoom
+
       Behaviors.receive: (_, msg) =>
         msg match
           case JoinNetwork(MemberUp(member)) =>
@@ -87,7 +95,7 @@ object ClientActor:
             // val nickName = view.getNickname()
             // ctx.log.info(s"🙋 Joining room as player: $nickName")
             // managerRef ! PlayerJoinedRoom(nickName, ctx.self)
-            viewBehavior(view, Some(managerRef))
+            viewBehavior(view, Some(managerRef), isBot)
 
           case ServiceNotAvailable() =>
             view.showAlert("Service Not Available, please wait...")
@@ -103,7 +111,7 @@ object ClientActor:
             gameView.visible = true
             view.close()
             ctx.self ! LocalClientEvent.Tick
-            run(model, gameView, localPlayer, managerRef)
+            run(model, gameView, (-1, -1), localPlayer, managerRef, isBot)
 
           case LocalClientEvent.JoinFriendsRoom(code) =>
             ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
@@ -138,11 +146,10 @@ object ClientActor:
             ctx.log.info(s"🏀 Private Gama Manager found: ${privateManagerRef.path}")
             val nickName = view.getNickname()
             privateManagerRef ! PlayerJoinedRoom(nickName, ctx.self)
-            viewBehavior(view, Some(privateManagerRef))
+            viewBehavior(view, Some(privateManagerRef), isBot)
 
           case InitWorld(world, player, managerRef) =>
             ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
-
             val localWorld = createLocalWorld(world)
             val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
             val model = new ImmutableGameStateManager(localWorld)
@@ -152,7 +159,7 @@ object ClientActor:
             view.close()
 
             ctx.self ! LocalClientEvent.Tick
-            run(model, gameView, localPlayer, managerRef)
+            run(model, gameView, (-1, -1), localPlayer, managerRef, isBot)
 
           case _ => Behaviors.same
 
@@ -184,34 +191,25 @@ object ClientActor:
   def run(
       model: ImmutableGameStateManager,
       gameView: LocalView,
+      previousDirection: (Double, Double) = (-1, -1),
       player: LocalPlayer,
       managerRef: ActorRef[ChildEvent],
-      isSynced: Boolean = true
-  ): Behavior[ClientEvent | LocalClientEvent] = Behaviors.withTimers: timer =>
-    timer.startTimerAtFixedRate(LocalClientEvent.Tick, 50.millis)
+      isBot: Boolean
+  ): Behavior[ClientEvent | LocalClientEvent] =
     Behaviors.receive: (ctx, msg) =>
       msg match
-        case LocalClientEvent.Tick if isSynced =>
-          ctx.log.info(s"🏀🏀🏀 Tick - Moving player ${player.id}")
-          ctx.log.info(s"------> ${managerRef.path}")
-          val (dx, dy) = gameView.direction
-          val newModel = model.movePlayerDirection(player.id, dx, dy).tick()
-          val eatenPlayers =
-            model.world.players.filterNot(p => newModel.world.players.exists(_.id == p.id))
-          if eatenPlayers.nonEmpty then
-            ctx.log.info(s"🏀 Players eaten: ${eatenPlayers.map(_.id).mkString(", ")}")
-            eatenPlayers.foreach(player => managerRef ! EatenPlayer(player.id))
-          val remoteWorld = createRemoteWorld(newModel.world)
-          managerRef ! RequestRemoteWorldUpdate(remoteWorld, (player.id, ctx.self))
-          run(newModel, gameView, player, managerRef, isSynced = false)
-
         case ReceivedRemoteWorld(remoteWorld) =>
-          ctx.log.info(s"🍟 Received remote world update")
           val world = createLocalWorld(remoteWorld)
           val newModel = new ImmutableGameStateManager(world)
+          val updatedPlayer = newModel.world.playerById(player.id).get
+          val (dx, dy) =
+            if isBot then AIMovement.getAIDirection(updatedPlayer, world)
+            else gameView.direction
+
+          managerRef ! PlayerMove(updatedPlayer.id, dx, dy)
           gameView.updateWorld(newModel.world)
           gameView.repaint()
-          run(newModel, gameView, player, managerRef, isSynced = true)
+          run(newModel, gameView, (dx, dy), updatedPlayer, managerRef, isBot)
 
         case EndGame() =>
           gameView.visible = false
@@ -224,8 +222,7 @@ object ClientActor:
           val localWorld = createLocalWorld(newWorld)
           val newModel = new ImmutableGameStateManager(localWorld)
           val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
-          timer.startTimerAtFixedRate(LocalClientEvent.Tick, 50.millis)
-          run(newModel, gameView, localPlayer, newManagerRef, isSynced = true)
+          run(newModel, gameView, previousDirection, localPlayer, newManagerRef, isBot)
 
         case _ =>
           Behaviors.same

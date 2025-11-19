@@ -30,6 +30,9 @@ class View(clientActor: ActorRef[LocalClientEvent]) extends MainFrame:
   val alertLabel = makeLabel("")
   alertLabel.foreground = Color.DARK_GRAY
 
+  def setNickname(nickname: String): Unit =
+    nicknameTextField.text = nickname
+
   def makeLabel(text: String): Label =
     val label = new Label(text)
     label.font = label.font.deriveFont(java.awt.Font.BOLD)

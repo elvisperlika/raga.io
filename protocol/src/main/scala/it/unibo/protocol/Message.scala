@@ -24,20 +24,22 @@ case class RequestWorldInRoom(
     client: ActorRef[ClientEvent]
 ) extends ChildEvent
 case class RemoteWorld(world: World, player: Player) extends ChildEvent
-case class RequestRemoteWorldUpdate(world: World, player: PlayerRef) extends ChildEvent
-case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent]) extends ChildEvent
+case class SetUp(worldId: ID, motherRef: ActorRef[MotherEvent], backupRef: ActorRef[BackupEvent])
+    extends ChildEvent
 case class ChildClientLeft(client: ActorRef[ClientEvent]) extends ChildEvent
 case class EatenPlayer(id: ID) extends ChildEvent
 case class RequestPrivateRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 case class NewSetUp(world: World, clients: Map[String, ActorRef[ClientEvent]]) extends ChildEvent
-case class RequestWorldToBackup(replyTo: ActorRef[WorldToBackup]) extends ChildEvent
+case class RequestWorldToBackup(replyTo: ActorRef[SaveWorldData]) extends ChildEvent
+case class PlayerMove(id: ID, newX: Double, newY: Double) extends ChildEvent
 
-trait BackupCommand extends Message
-case class WorldToBackup(
+trait BackupEvent extends Message
+case class SaveWorldData(
+    seconds: ActorRef[ChildEvent],
     world: World,
     managedPlayers: Map[String, ActorRef[ClientEvent]]
-) extends BackupCommand
+) extends BackupEvent
 
 /* -------------------------------------------- Client Events -------------------------------------------- */
 
@@ -102,9 +104,23 @@ object ServiceKeys:
 
 /* -------------------------------------------- World entities -------------------------------------------- */
 
-private trait Entity
+trait Entity:
 
-case class Player(id: ID, x: Double, y: Double, mass: Double) extends Entity
+  def id: String
+  def mass: Double
+  def x: Double
+  def y: Double
+  def radius: Double = math.sqrt(mass / math.Pi)
+
+  def distanceTo(other: Entity): Double =
+    val dx = x - other.x
+    val dy = y - other.y
+    math.hypot(dx, dy)
+
+case class Player(id: ID, x: Double, y: Double, mass: Double) extends Entity:
+
+  def grow(entity: Entity): Player =
+    copy(mass = mass + entity.mass)
 
 case class Food(id: ID, x: Double, y: Double, mass: Double) extends Entity
 

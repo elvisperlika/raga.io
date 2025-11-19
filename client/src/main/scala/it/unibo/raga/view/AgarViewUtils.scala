@@ -38,6 +38,7 @@ object AgarViewUtils:
     // Draw world name
     g.setColor(worldNameColor)
     g.drawString(s"World ID: ${world.id}", worldNameOffsetX, worldNameOffsetY)
+    g.drawString(s"Players: ${world.players.size}", worldNameOffsetX, worldNameOffsetY + 15)
 
     // Draw foods
     g.setColor(Color.green)

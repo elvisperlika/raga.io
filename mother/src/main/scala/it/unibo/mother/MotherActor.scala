@@ -9,6 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import it.unibo.mother.BackupActor.RequestBackup
 import it.unibo.protocol.*
+import it.unibo.protocol.BackupEvent
 import it.unibo.protocol.ServiceKeys.MOTHER_SERVICE_KEY
 
 import scala.concurrent.ExecutionContext
@@ -39,7 +40,7 @@ object MotherActor:
 
   def behavior(
       state: MotherState,
-      backupActor: ActorRef[BackupCommand]
+      backupActor: ActorRef[BackupEvent]
   ): Behavior[MotherEvent] =
     Behaviors.receive: (ctx, msg) =>
       msg match
@@ -70,7 +71,7 @@ object MotherActor:
           ctx.log.info(s"😍 Child Up: ${child.path}")
           backupActor ! BackupActor.FollowChild(child)
           val newID = generateWorldID(state.children.map(_.worldId))
-          child ! SetUp(newID, ctx.self)
+          child ! SetUp(newID, ctx.self, backupActor)
 
           val newChildState = ChildState(ref = child, worldId = newID)
           // val newRooms = state.rooms + (newID -> newChildState)
@@ -118,7 +119,7 @@ object MotherActor:
             case Some(childState) if childState.clients.nonEmpty =>
               ctx.log.info(s"😍 Recovering clients from child server ${child.path}")
               backupActor
-                .ask[WorldToBackup](replyTo => RequestBackup(child, replyTo))
+                .ask[SaveWorldData](replyTo => RequestBackup(child, replyTo))
                 .onComplete {
                   case Success(worldToBackup) =>
                     backupActor ! BackupActor.UnfollowChild(child)

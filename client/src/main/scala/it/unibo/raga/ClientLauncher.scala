@@ -24,7 +24,17 @@ object ClientLauncher3:
   def main(args: Array[String]): Unit =
     startUp()
 
-def startUp(): Unit =
+object Spawn5Bots:
+
+  def main(args: Array[String]): Unit =
+    for _ <- 1 to 5 do startUp(isBot = true)
+
+object Spawn10Bots:
+
+  def main(args: Array[String]): Unit =
+    for _ <- 1 to 10 do startUp(isBot = true)
+
+def startUp(isBot: Boolean = false): Unit =
   val dynamicConfigString =
     s"""
       akka.remote.artery.canonical.hostname = "$LOCALHOST"
@@ -34,4 +44,4 @@ def startUp(): Unit =
     .parseString(dynamicConfigString)
     .withFallback(ConfigFactory.load())
 
-  ActorSystem[ClientEvent | LocalClientEvent](ClientActor(), ACTOR_SYSTEM_NAME, config)
+  ActorSystem[ClientEvent | LocalClientEvent](ClientActor(isBot), ACTOR_SYSTEM_NAME, config)

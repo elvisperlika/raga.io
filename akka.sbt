@@ -1,4 +1,4 @@
-import sbt.`*`
+import sbt._
 
 val token: String = sys.env.get("AKKA_TOKEN") match {
   case Some(t) if t.nonEmpty => t

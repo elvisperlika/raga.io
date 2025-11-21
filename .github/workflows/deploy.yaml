@@ -10,8 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      AKKA_TOKEN: ${{ secrets.AKKA_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -28,6 +26,8 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Build JARs
+        env:
+          AKKA_TOKEN: ${{ secrets.AKKA_TOKEN }}
         run: sbt assembly
 
       - name: Upload Client JAR

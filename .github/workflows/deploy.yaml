@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      AKKA_TOKEN: ${{ secrets.AKKA_TOKEN }}
 
     steps:
       - name: Checkout code

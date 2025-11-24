@@ -10,7 +10,7 @@ import scala.swing.*
 class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[LocalClientEvent])
     extends MainFrame:
 
-  title = s"Raga.io - Local View ($playerId)"
+  title = s"Raga.io - ($playerId)"
   preferredSize = new Dimension(400, 400)
 
   var direction = (0.0, 0.0) // (dx, dy)
@@ -44,6 +44,9 @@ class LocalView(var world: LocalWorld, playerId: String, actorRef: ActorRef[Loca
         repaint()
       }
     }
+
+  def updateFPS(fps: Int): Unit =
+    title = s"Raga.io - ($playerId) - FPS: $fps"
 
   def updateWorld(newWorld: LocalWorld): Unit =
     world = newWorld

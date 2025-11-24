@@ -24,7 +24,7 @@ object MembersManager:
   val WorkerServiceKey = ServiceKey[ClientEvent]("worker-service")
 
   def apply(motherRef: ActorRef[MotherEvent]): Behavior[Command] = Behaviors.setup { ctx =>
-    ctx.log.info(s"🪀 Members Manager is Up")
+    // ctx.log.info(s"🪀 Members Manager is Up")
 
     val listingAdapter = ctx.messageAdapter[Receptionist.Listing](WrappedListing.apply)
     ctx.system.receptionist ! Receptionist.Subscribe(CLIENT_SERVICE_KEY, listingAdapter)
@@ -46,10 +46,9 @@ object MembersManager:
               val connectedClients = newClients -- currentClients
               val disconnected = currentClients -- newClients
               connectedClients.foreach(motherRef ! ClientUp(_))
-              connectedClients.foreach(client =>
-                ctx.log.info(s"🪀 Connected client: ${client.path}")
-              )
-
+              // connectedClients.foreach(client =>
+              //   ctx.log.info(s"🪀 Connected client: ${client.path}")
+              // )
               disconnected.foreach(motherRef ! ClientLeft(_))
               behavior(motherRef, newClients, currentChildren)
 
@@ -57,7 +56,6 @@ object MembersManager:
               val connectedChildren = newChildren -- currentChildren
               val disconnectedChildren = currentChildren -- newChildren
               connectedChildren.foreach(motherRef ! ChildServerUp(_))
-              connectedChildren.foreach(child => ctx.log.info(s"🪀 Connected child: ${child.path}"))
-
+              // connectedChildren.foreach(child => ctx.log.info(s"🪀 Connected child: ${child.path}"))
               disconnectedChildren.foreach(motherRef ! ChildServerLeft(_))
               behavior(motherRef, currentClients, newChildren)

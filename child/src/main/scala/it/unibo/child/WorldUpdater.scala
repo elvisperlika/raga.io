@@ -1,8 +1,6 @@
 package it.unibo.child
 
-import it.unibo.protocol.ConfigParameters.DEFAULT_FOOD_SIZE
-import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_HEIGHT
-import it.unibo.protocol.ConfigParameters.DEFAULT_WORLD_WIDTH
+import it.unibo.protocol.ConfigParameters
 import it.unibo.protocol.ConfigParameters.INIT_FOOD_NUMBER
 import it.unibo.protocol.Food
 import it.unibo.protocol.Player
@@ -40,15 +38,17 @@ object WorldUpdater:
     (1 to n) map (i =>
       Food(
         s"food-$i",
-        scala.util.Random.nextDouble() * DEFAULT_WORLD_WIDTH,
-        scala.util.Random.nextDouble() * DEFAULT_WORLD_HEIGHT,
-        DEFAULT_FOOD_SIZE
+        scala.util.Random.nextDouble() * ConfigParameters.DEFAULT_WORLD_WIDTH,
+        scala.util.Random.nextDouble() * ConfigParameters.DEFAULT_WORLD_HEIGHT,
+        ConfigParameters.DEFAULT_FOOD_SIZE
       )
     )
 
   private def updatePlayerPosition(world: World, player: Player, dx: Double, dy: Double): Player =
-    val newX = (player.x + dx * speed).max(0).min(world.width)
-    val newY = (player.y + dy * speed).max(0).min(world.height)
+    val baseMass = ConfigParameters.DEFAULT_PLAYER_SIZE
+    val newSpeed = speed * math.pow(baseMass / player.mass, 0.3).min(1.0)
+    val newX = (player.x + dx * newSpeed).max(0).min(world.width)
+    val newY = (player.y + dy * newSpeed).max(0).min(world.height)
     player.copy(x = newX, y = newY)
 
   private def updateWorldAfterMovement(world: World, player: Player): World =

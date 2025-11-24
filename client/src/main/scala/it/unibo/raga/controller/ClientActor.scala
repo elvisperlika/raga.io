@@ -37,7 +37,7 @@ object ClientActor:
     case JoinFriendsRoomFailed(code: String)
 
   def apply(isBot: Boolean): Behavior[ClientEvent | LocalClientEvent] = Behaviors.setup: ctx =>
-    ctx.log.info("🏀 Client node Up")
+    // ctx.log.info("🏀 Client node Up")
     var view = new View(ctx.self)
     view.visible = true
     view.showAlert("Offline")
@@ -64,7 +64,7 @@ object ClientActor:
   ): Behavior[ClientEvent | LocalClientEvent] =
     Behaviors.setup: ctx =>
       if isBot then
-        ctx.log.info("🏀 Bot client starting...")
+        // ctx.log.info("🏀 Bot client starting...")
         val botNickName = s"Bot_${scala.util.Random.alphanumeric.take(5).mkString}"
         view.setNickname(botNickName)
         ctx.self ! LocalClientEvent.JoinRandomRoom
@@ -76,7 +76,7 @@ object ClientActor:
             Behaviors.same
 
           case LocalClientEvent.JoinRandomRoom =>
-            ctx.log.info(s"🏀 Join Button pressed...")
+            // ctx.log.info(s"🏀 Join Button pressed...")
             val nickName = view.getNickname()
             manager match
               case Some(_) if nickName.isEmpty =>
@@ -89,7 +89,7 @@ object ClientActor:
                 Behaviors.same
 
           case GameManagerAddress(managerRef) =>
-            ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
+            // ctx.log.info(s"🏀 Gama Manager found: ${managerRef.path}")
             view.showAlert("Connected")
 
             // val nickName = view.getNickname()
@@ -102,7 +102,7 @@ object ClientActor:
             Behaviors.same
 
           case LocalClientEvent.ReceivedWorld(remoteWorld, player, managerRef) =>
-            ctx.log.info(s"🏀 First world received")
+            // ctx.log.info(s"🏀 First world received")
             val localWorld = createLocalWorld(remoteWorld)
             val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
             val model = new ImmutableGameStateManager(localWorld)
@@ -114,7 +114,7 @@ object ClientActor:
             run(model, gameView, (-1, -1), localPlayer, managerRef, isBot)
 
           case LocalClientEvent.JoinFriendsRoom(code) =>
-            ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
+            // ctx.log.info(s"🏀 Join friend’s room pressed with code: $code")
             val nickName = view.getNickname()
             manager match
               case Some(ref) =>
@@ -129,27 +129,27 @@ object ClientActor:
             Behaviors.same
 
           case LocalClientEvent.CreateAndJoinRoom =>
-            ctx.log.info("🏀 Create & Join Room pressed...")
+            // ctx.log.info("🏀 Create & Join Room pressed...")
             val nickName = view.getNickname()
             manager match
               case Some(_) if nickName.isEmpty =>
                 view.showAlert("Please enter a nickname")
                 Behaviors.same
               case Some(ref) if nickName.nonEmpty =>
-                ctx.log.info(s"🏀 Asking to create a room for $nickName")
+                // ctx.log.info(s"🏀 Asking to create a room for $nickName")
                 ref ! RequestPrivateRoom(nickName, ctx.self)
               case _ =>
                 view.showAlert("Service Not Available, please wait...")
             Behaviors.same
 
           case PrivateManagerAddress(privateManagerRef) =>
-            ctx.log.info(s"🏀 Private Gama Manager found: ${privateManagerRef.path}")
+            // ctx.log.info(s"🏀 Private Gama Manager found: ${privateManagerRef.path}")
             val nickName = view.getNickname()
             privateManagerRef ! PlayerJoinedRoom(nickName, ctx.self)
             viewBehavior(view, Some(privateManagerRef), isBot)
 
           case InitWorld(world, player, managerRef) =>
-            ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
+            // ctx.log.info(s"🌍 Received world ${world.id} with ${world.players.size} players")
             val localWorld = createLocalWorld(world)
             val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)
             val model = new ImmutableGameStateManager(localWorld)
@@ -172,7 +172,7 @@ object ClientActor:
     given Scheduler = ctx.system.scheduler
     given ExecutionContext = ctx.executionContext
 
-    ctx.log.info(s"🏀 Requesting World to ${manager.path}...")
+    // ctx.log.info(s"🏀 Requesting World to ${manager.path}...")
     manager.ask[RemoteWorld](replyTo => RequestWorld(nickName, replyTo, ctx.self)).onComplete {
       case Success(remoteWorld) =>
         ctx.self ! LocalClientEvent.ReceivedWorld(remoteWorld.world, remoteWorld.player, manager)
@@ -194,7 +194,9 @@ object ClientActor:
       previousDirection: (Double, Double) = (-1, -1),
       player: LocalPlayer,
       managerRef: ActorRef[ChildEvent],
-      isBot: Boolean
+      isBot: Boolean,
+      frameCount: Int = 0,
+      lastFpsUpdate: Long = System.currentTimeMillis()
   ): Behavior[ClientEvent | LocalClientEvent] =
     Behaviors.receive: (ctx, msg) =>
       msg match
@@ -206,10 +208,31 @@ object ClientActor:
             if isBot then AIMovement.getAIDirection(updatedPlayer, world)
             else gameView.direction
 
+          // FPS calculation
+          val currentTime = System.currentTimeMillis()
+          val newFrameCount = frameCount + 1
+          val timeDiff = currentTime - lastFpsUpdate
+
+          val (updatedFrameCount, updatedLastFpsUpdate) =
+            if timeDiff >= 1000 then // Update FPS every second
+              val fps = (newFrameCount * 1000.0 / timeDiff).toInt
+              gameView.updateFPS(fps)
+              (0, currentTime)
+            else (newFrameCount, lastFpsUpdate)
+
           managerRef ! PlayerMove(updatedPlayer.id, dx, dy)
           gameView.updateWorld(newModel.world)
           gameView.repaint()
-          run(newModel, gameView, (dx, dy), updatedPlayer, managerRef, isBot)
+          run(
+            newModel,
+            gameView,
+            (dx, dy),
+            updatedPlayer,
+            managerRef,
+            isBot,
+            updatedFrameCount,
+            updatedLastFpsUpdate
+          )
 
         case EndGame() =>
           gameView.visible = false
@@ -218,7 +241,7 @@ object ClientActor:
           endGame(endGameView)
 
         case NewManager(newManagerRef, newWorld, player) =>
-          ctx.log.info(s"🏀 New Manager Address received: ${newManagerRef.path}")
+          // ctx.log.info(s"🏀 New Manager Address received: ${newManagerRef.path}")
           val localWorld = createLocalWorld(newWorld)
           val newModel = new ImmutableGameStateManager(localWorld)
           val localPlayer = LocalPlayer(player.id, player.x, player.y, player.mass)

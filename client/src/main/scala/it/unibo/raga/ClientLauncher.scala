@@ -24,6 +24,31 @@ object ClientLauncher3:
   def main(args: Array[String]): Unit =
     startUp()
 
+object Bot1:
+
+  def main(args: Array[String]): Unit =
+    startUp(isBot = true)
+
+object Bot2:
+
+  def main(args: Array[String]): Unit =
+    startUp(isBot = true)
+
+object Bot3:
+
+  def main(args: Array[String]): Unit =
+    startUp(isBot = true)
+
+object Bot4:
+
+  def main(args: Array[String]): Unit =
+    startUp(isBot = true)
+
+object Bot5:
+
+  def main(args: Array[String]): Unit =
+    startUp(isBot = true)
+
 object Spawn5Bots:
 
   def main(args: Array[String]): Unit =

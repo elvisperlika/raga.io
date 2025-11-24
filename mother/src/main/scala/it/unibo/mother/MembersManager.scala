@@ -6,15 +6,15 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.Receptionist.Listing
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import it.unibo.protocol.ClientEvent
-import it.unibo.protocol.MotherEvent
-import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
-import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
 import it.unibo.protocol.ChildEvent
-import it.unibo.protocol.ClientUp
-import it.unibo.protocol.ClientLeft
-import it.unibo.protocol.ChildServerUp
 import it.unibo.protocol.ChildServerLeft
+import it.unibo.protocol.ChildServerUp
+import it.unibo.protocol.ClientEvent
+import it.unibo.protocol.ClientLeft
+import it.unibo.protocol.ClientUp
+import it.unibo.protocol.MotherEvent
+import it.unibo.protocol.ServiceKeys.CHILD_SERVICE_KEY
+import it.unibo.protocol.ServiceKeys.CLIENT_SERVICE_KEY
 
 object MembersManager:
 
@@ -46,9 +46,6 @@ object MembersManager:
               val connectedClients = newClients -- currentClients
               val disconnected = currentClients -- newClients
               connectedClients.foreach(motherRef ! ClientUp(_))
-              // connectedClients.foreach(client =>
-              //   ctx.log.info(s"🪀 Connected client: ${client.path}")
-              // )
               disconnected.foreach(motherRef ! ClientLeft(_))
               behavior(motherRef, newClients, currentChildren)
 
@@ -56,6 +53,5 @@ object MembersManager:
               val connectedChildren = newChildren -- currentChildren
               val disconnectedChildren = currentChildren -- newChildren
               connectedChildren.foreach(motherRef ! ChildServerUp(_))
-              // connectedChildren.foreach(child => ctx.log.info(s"🪀 Connected child: ${child.path}"))
               disconnectedChildren.foreach(motherRef ! ChildServerLeft(_))
               behavior(motherRef, currentClients, newChildren)

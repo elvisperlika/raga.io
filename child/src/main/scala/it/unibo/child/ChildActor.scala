@@ -19,7 +19,6 @@ private case class Tick() extends ChildEvent
 object ChildActor:
 
   def apply(): Behavior[ChildEvent] = Behaviors.setup: ctx =>
-    // ctx.log.info("🤖 Child node Up")
     val cluster = Cluster(ctx.system)
     ctx.system.receptionist ! Receptionist.Register(CHILD_SERVICE_KEY, ctx.self)
     Behaviors.receiveMessage {
@@ -34,7 +33,6 @@ object ChildActor:
           backupRef = backupRef
         )
       case _ =>
-        // ctx.log.warn(s"🤖 Received unexpected message in setup state")
         Behaviors.same
     }
 
@@ -67,7 +65,6 @@ object ChildActor:
           Behaviors.same
 
         case PlayerMove(id, dirX, dirY) =>
-          // ctx.log.info(s"🤖 Received movement from player $id: ($dirX, $dirY)")
           work(
             world,
             managedPlayers,
@@ -77,7 +74,6 @@ object ChildActor:
           )
 
         case RequestWorld(nickName, replyTo, playerRef) =>
-          // ctx.log.info(s"🤖 Player $nickName requested to join the world ${world.id}")
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
@@ -86,7 +82,6 @@ object ChildActor:
           work(newWorld, managedPlayers + (nickName -> playerRef), motherRef, backupRef)
 
         case ChildClientLeft(client) =>
-          // ctx.log.info(s"🤖 A client has left: ${client.path}")
           val playerId = managedPlayers.find(p => p._2 == client)
           playerId match
             case Some(player) =>
@@ -98,32 +93,27 @@ object ChildActor:
               work(newWorld, newManagedPlayers, motherRef, backupRef)
 
             case None =>
-              // ctx.log.info(s"🤖 PLAYER ID NOT FOUND")
               work(world, managedPlayers, motherRef, backupRef)
 
         case EatenPlayer(playerId) =>
-          // ctx.log.info(s"🤖 Player $playerId has been eaten and will be removed from the world")
           val newWorldPlayers = world.players.filterNot(_.id == playerId)
           val newWorld = world.copy(players = newWorldPlayers)
           managedPlayers.foreach: (_, ref) =>
             ref ! ReceivedRemoteWorld(newWorld)
           managedPlayers.find(_._1 == playerId) match
             case Some((_, ref)) => ref ! EndGame()
-            case None => // ctx.log.info(s"🤖 PLAYER ID NOT FOUND: $playerId")
+            case None =>
           work(newWorld, managedPlayers, motherRef, backupRef)
 
         case RequestWorldInRoom(nickName, roomCode, clientRef) =>
-          // ctx.log.info(s"🤖 Player $nickName requests to join room $roomCode")
           motherRef ! ClientAskToJoinRoom(clientRef, roomCode, nickName, ctx.self)
           Behaviors.same
 
         case RequestPrivateRoom(clientNickName, clientRef) =>
-          // ctx.log.info(s"🤖 Player $clientNickName request to create a private room")
           motherRef ! RequestPrivateRoomCreation(clientRef, clientNickName)
           Behaviors.same
 
         case PlayerJoinedRoom(nickName, client) =>
-          // ctx.log.info(s"🎉 New player $nickName joined this room!")
           val randX = scala.util.Random.nextDouble() * (world.width - DEFAULT_PLAYER_SIZE)
           val randY = scala.util.Random.nextDouble() * (world.height - DEFAULT_PLAYER_SIZE)
           val newPlayer = Player(nickName, randX, randY, DEFAULT_PLAYER_SIZE)
@@ -140,9 +130,7 @@ object ChildActor:
           work(newWorld, newManagedPlayers, motherRef, backupRef)
 
         case NewSetUp(world, clients) =>
-          // ctx.log.info(s"🤖 Setting up new world ${world.id} with ${clients.size} clients")
           clients.foreach: client =>
             val player = world.players.find(_.id == client._1).get
             client._2 ! NewManager(ctx.self, world, player)
-          // ctx.log.info(s"🤖 Received New SetUp with ${clients.size} clients")
           work(world, clients, motherRef, backupRef)

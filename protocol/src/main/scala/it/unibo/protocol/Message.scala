@@ -31,7 +31,6 @@ case class EatenPlayer(id: ID) extends ChildEvent
 case class RequestPrivateRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 case class PlayerJoinedRoom(nickName: String, client: ActorRef[ClientEvent]) extends ChildEvent
 case class NewSetUp(world: World, clients: Map[String, ActorRef[ClientEvent]]) extends ChildEvent
-case class RequestWorldToBackup(replyTo: ActorRef[SaveWorldData]) extends ChildEvent
 case class PlayerMove(id: ID, newX: Double, newY: Double) extends ChildEvent
 
 trait BackupEvent extends Message
@@ -47,7 +46,6 @@ trait ClientEvent extends Message
 
 /** The client join the network. */
 case class JoinNetwork(event: MemberEvent) extends ClientEvent
-case class UpdateView() extends ClientEvent
 case class GameManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class ReceivedRemoteWorld(world: World) extends ClientEvent
 case class ServiceNotAvailable() extends ClientEvent
@@ -57,7 +55,6 @@ case class JoinFriendsRoomFailed(roomId: ID) extends ClientEvent
 case class NewPlayerJoined(player: Player) extends ClientEvent
 case class InitWorld(world: World, player: Player, managerRef: ActorRef[ChildEvent])
     extends ClientEvent
-case class CodeNotFound() extends ClientEvent
 case class PrivateManagerAddress(ref: ActorRef[ChildEvent]) extends ClientEvent
 case class NewManager(
     newManagerRef: ActorRef[ChildEvent],
